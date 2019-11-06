@@ -1,7 +1,8 @@
 # PentaDrone
 PowerShell Post-exploitation agent based on Mitre Att&ck framework
 
-Disclaimer
+Disclaimer.
+
 This project should be used for authorized testing or educational purposes only.
 The main objective behind creating this offensive project was to aid security researchers
 and to enhance the understanding of HTTP loader style botnets . 
