@@ -1,5 +1,5 @@
 # Generator v3.0 
-#echo on
+# Generate pentaDrone Offensives Assets
 Write-Host "Reading parameters from 'config.ini' file..." -ForegroundColor DarkGreen;
 Get-Content ".\config.ini" | ForEach-Object -Begin {$settings=@{}} -Process {$store = [regex]::split($_,'='); if(($store[0].CompareTo("") -ne 0) -and ($store[0].StartsWith("[") -ne $True) -and ($store[0].StartsWith("#") -ne $True)) {$settings.Add($store[0], $store[1])}}
 If (Test-Path  .\Output){ Remove-Item -path .\Output }
