@@ -1,5 +1,5 @@
-function Get-WebCamImage { 
+function Getcal { 
 calc.exe
 }  
 
-Get-WebCamImage 
+Get-calc

