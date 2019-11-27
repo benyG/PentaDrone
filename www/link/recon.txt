@@ -18,6 +18,12 @@ Function ModReconCommand {
 			$output = "------------------ Computer -----------------------------`r`n"
 			echo "0%"
 			$output = $output + "`n`n Hostname:`n" + ((hostname)  -join "`r`n")
+			$output_tmp = (Get-WmiObject -class Win32_OperatingSystem).Caption
+			$output = $output + "`n`n OS name:`n" + $output_tmp 
+			$output_tmp = [System.Environment]::OSVersion.Version
+			$output = $output + "`n`n OS Build:`n" + $output_tmp 
+			$output_tmp = Get-WinSystemLocale
+			$output = $output + "`n`n OS Language:`n" + $output_tmp 
 			$output = $output + "`n`n IP Address:`n" + ((ipconfig /all)  -join "`r`n")		
 			$output = $output + "`n`n Domain Name:`n" + ((registry_values "hklm:\SOFTWARE\Microsoft\Windows\CurrentVersion\Group Policy\History\" "all" "no")  -join "`r`n") 
 			$output = $output + "`n`n System:`n" + (((Get-WmiObject -class Win32_OperatingSystem).Caption)  -join "`r`n")
@@ -26,9 +32,14 @@ Function ModReconCommand {
 			echo "10%"
 			$output = $output + "`n`n ------------------ Users -------------------------------`r`n"
 			$output = $output + "`n`n Logged in users:`n" + ((registry_values "hklm:\software\microsoft\windows nt\currentversion\profilelist" "profileimagepath") -join "`r`n") 
+			$output = $output + "`n`n WhoAmI:`n" + ((whoami)  -join "`r`n") 
 			$output = $output + "`n`n Account Policy:`n" + ((net accounts)  -join "`r`n") 
 			$output = $output + "`n`n Local users:`n" + ((net user)  -join "`r`n") 
 			$output = $output + "`n`n Local Groups:`n" + ((net localgroup)  -join "`r`n") 
+			$output_tmp = Get-LocalGroupMember -Group Administrateurs
+			$output = $output + "`n`n Local Admins:`n" + $output_tmp 
+			$output_tmp = Get-LocalGroupMember -Group Administrators
+			$output = $output + "`n`n Local Admins:`n" + $output_tmp 
 			echo "20%"
 			$output = $output + "`n`n ------------------ Network ------------------------------`r`n"
 			$output = $output + "`n`n Network config:`n" + ((ipconfig -all)  -join "`r`n")
