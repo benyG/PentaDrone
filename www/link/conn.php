@@ -1,8 +1,8 @@
 <?php
 //Connexion à la BD
-//$bdd=mysqli_connect("localhost","root","","pnt");
+$bdd=mysqli_connect("localhost","root","","pnt");
 
-/**/
+/*
 $servername = "localhost";
 $username = "root";
 $password = "";
@@ -15,6 +15,6 @@ $bdd = new mysqli($servername, $username, $password, $dbname);
 if ($bdd->connect_error) {
     die("Connection failed: " . $bdd->connect_error);
 }
-/**/
+*/
 
 ?>

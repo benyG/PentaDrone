@@ -1,0 +1,1 @@
+<autopilot> <pilot>	<cmd>!run|RESULT=!cmd1|RESULT=!cmd2</cmd> </pilot> <pilot>	<cmd>!priv|RESULT=!cmd3|RESULT=!cmd4</cmd> </pilot> </autopilot>

