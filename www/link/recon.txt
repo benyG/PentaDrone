@@ -22,7 +22,7 @@ Function ModReconCommand {
 			$output = $output + "`n`n ======= System Info:`n" + $output_tmp 
 			$output_tmp = Get-WinSystemLocale
 			$output = $output + "`n`n ======= OS Language:`n" + $output_tmp 
-			$output = $output + "`n`n ======= Domain Name:`n" + ((registry_values "hklm:\SOFTWARE\Microsoft\Windows\CurrentVersion\Group Policy\History\" "all" "no")  -join "`r`n") 
+			$output = $output + "`n`n ======= Domain Name:`n" + (((Get-WmiObject Win32_ComputerSystem).Domain)  -join "`r`n") 
 			$output = $output + "`n`n ======= System:`n" + (((Get-WmiObject -class Win32_OperatingSystem).Caption)  -join "`r`n")
 			$output_tmp = Get-WmiObject -Class Win32_Volume | Select DriveLetter,@{Label="FreeSpace (In GB)";Expression={$_.Freespace/1gb}},@{Label="Capacity (In GB)";Expression={$_.Capacity/1gb}},DeviceID,Label |Format-List		
 			$output = $output + "`n`n ======= Disk:`n" + $output_tmp 
@@ -39,6 +39,7 @@ Function ModReconCommand {
 			$output = $output + "`n`n ======= Local Admins:`n" + $output_tmp 
 			echo "30%"
 			$output = $output + "`n`n ========================= NETWORK ===============================`r`n"
+			$output = $output + "`n`n ======= Network Profiles:`n" + ((Get-NetConnectionProfile)  -join "`r`n")
 			$output = $output + "`n`n ======= Network config:`n" + ((ipconfig -all)  -join "`r`n")
 			$output = $output + "`n`n ======= ARP Cache:`n" + ((arp -a)  -join "`r`n")
 			#$output = $output + "`n`n ======== Open connections:`n" + ((netstat -b -o 5)  -join "`r`n")
@@ -47,7 +48,7 @@ Function ModReconCommand {
 			echo "50%"
 			$output = $output + "`n`n ======================== SHARES AND FOLDER ================================`r`n"
 			$output = $output + "`n`n ======= Computers:`n" + ((net view)  -join "`r`n")
-			$output = $output + "`n`n ======= Shared folder:`n" + ((net share)  -join "`r`n") 
+			$output = $output + "`n`n ======= Shared folder:`n" + ((Get-SmbShare)  -join "`r`n") 
 			$output = $output + "`n`n ======= Shares on the machine:`n" + ((registry_values "hklm:\SYSTEM\CurrentControlSet\services\LanmanServer\Shares" "all" "no")  -join "`r`n") 		
 			echo "70%"
 			$output = $output + "`n`n ======================== SOFTWARES AND DOWNLOADS =================`r`n"

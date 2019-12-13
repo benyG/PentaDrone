@@ -10,8 +10,7 @@ if(isset($_GET['pc'])) {
 	$n = strlen($cmd);
 	$test = mysqli_query($bdd, "SELECT id, result FROM commands WHERE pc='$pc' AND SUBSTRING(cmd,1,$n) = '$cmd' AND ok='1' LIMIT 1");	
 	while($tabl=mysqli_fetch_array($test)){   
-		$resultOfcmd = $tabl['result'];	
-				
+		$resultOfcmd = $tabl['result'];					
 	if(empty($resultOfcmd)){
 		}
 	else {  

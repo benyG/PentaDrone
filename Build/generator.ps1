@@ -600,15 +600,18 @@ copy .\bat\pnt.bat .\c2c
 copy .\c2c\pnt-Encoded.bat .\bat
 copy .\png\$evilimage .\c2c
 move .\pnt.SED .\exe
-#set-content .\payload.ps1 -Value ""
-#Rename-Item .\payload.ps1 note.txt
+#---Debug---
+set-content .\payload.ps1 -Value ""
+Rename-Item .\payload.ps1 note.txt
+Remove-Item -path .\note.txt
+#-----------
 move .\index.html .\hta
 move .\template.xlsm .\xls
 move .\template.xls .\xls
 move .\template.docm .\xls
 move .\template.doc .\xls
 move .\MacroPack.exe .\xls
-#Remove-Item -path .\note.txt
+
 Remove-Item -path .\autorunTemplate.inf
 Write-Host "."
 Write-Host "."
