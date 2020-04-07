@@ -1,5 +1,6 @@
 # PentaDrone
-PowerShell Post-exploitation agent based on Mitre Att&ck framework
+Asynchronous PowerShell Post-exploitation agent based on Mitre Att&ck framework.
+Able to automate its post-exploitation process with autopilot mode. Can be used for redteaming and pentesting operations in several ways.
 
 Disclaimer.
 
