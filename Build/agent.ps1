@@ -129,16 +129,15 @@ if ($pshversion -lt 3) {
 		}
 		
 	}	
-	#Installation of Chocolatey 
-	if ($upgradepshell -eq "yes") {
-		$InstallDir="C:\ProgramData\choco"
-		$env:chocolateyInstall=$InstallDir
-		iex ((new-object net.webclient).DownloadString('https://chocolatey.org/install.ps1'));
-		SET PATH=%PATH%;C:\ProgramData\Choco\bin;
-		$env:chocolateyUseWindowsCompression = 'true'
-		choco install powershell -y	
-		[string] $Global:pshversion = $PSVersionTable.psversion.Major
-		}
+#Installation of Chocolatey 
+if ($upgradepshell -eq "yes") {
+	$InstallDir="C:\ProgramData\choco"
+	$env:chocolateyInstall=$InstallDir
+	iex ((new-object net.webclient).DownloadString('https://chocolatey.org/install.ps1'));
+	SET PATH=%PATH%;C:\ProgramData\Choco\bin;
+	$env:chocolateyUseWindowsCompression = 'true'
+	choco install powershell -y	
+	[string] $Global:pshversion = $PSVersionTable.psversion.Major
 	}
 
 ############## GENERAL FUNCTIONS ############## 
@@ -262,7 +261,7 @@ if ($pshversion -lt 3) {
 				Add-Type -AssemblyName System.IO.Compression.FileSystem
 				[System.IO.Compression.ZipFile]::ExtractToDirectory( $ziparchive, $extractpath )
 				}
-			else ($pshversion -gt 3) { 
+			else { 
 				expand-archive -path $ziparchive -destinationpath $extractpath
 				}			
 			}
