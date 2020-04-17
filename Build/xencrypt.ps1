@@ -67,9 +67,9 @@ function Invoke-Xencrypt {
         [string] $iterations = 2
     )
     Process {
-        Write-Output "
-Xencrypt  Copyright (C) 2020  Xentropy ( @SamuelAnttila )
-"
+#        Write-Output "
+#Xencrypt  Copyright (C) 2020  Xentropy ( @SamuelAnttila )
+#"
 
         # read
         Write-Output "[*] Reading '$($infile)' ..."

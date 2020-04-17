@@ -1367,22 +1367,25 @@
             }
             
             //
-            // View column for pc field
+            // View column for id field
             //
-            $column = new TextViewColumn('pc', 'pc', 'Session ID', $this->dataset);
+            $column = new NumberViewColumn('id', 'id', 'Id', $this->dataset);
             $column->SetOrderable(true);
-            $column->SetMaxLength(75);
-            $column->SetFullTextWindowHandlerName('computerGrid_pc_handler_list');
+            $column->setNumberAfterDecimal(0);
+            $column->setThousandsSeparator(',');
+            $column->setDecimalSeparator('');
             $column->setMinimalVisibility(ColumnVisibility::PHONE);
             $column->SetDescription('');
             $column->SetFixedWidth(null);
             $grid->AddViewColumn($column);
             
             //
-            // View column for hostname field
+            // View column for pc field
             //
-            $column = new TextViewColumn('hostname', 'hostname', 'Hostname', $this->dataset);
+            $column = new TextViewColumn('pc', 'pc', 'Session ID', $this->dataset);
             $column->SetOrderable(true);
+            $column->SetMaxLength(75);
+            $column->SetFullTextWindowHandlerName('computerGrid_pc_handler_list');
             $column->setMinimalVisibility(ColumnVisibility::PHONE);
             $column->SetDescription('');
             $column->SetFixedWidth(null);
@@ -1437,6 +1440,16 @@
     
         protected function AddSingleRecordViewColumns(Grid $grid)
         {
+            //
+            // View column for id field
+            //
+            $column = new NumberViewColumn('id', 'id', 'Id', $this->dataset);
+            $column->SetOrderable(true);
+            $column->setNumberAfterDecimal(0);
+            $column->setThousandsSeparator(',');
+            $column->setDecimalSeparator('');
+            $grid->AddSingleRecordViewColumn($column);
+            
             //
             // View column for pc field
             //

@@ -1,5 +1,0 @@
-function Getcal { 
-calc.exe
-}  
-
-Getcal

