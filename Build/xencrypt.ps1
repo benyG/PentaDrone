@@ -194,15 +194,7 @@ function Invoke-Xencrypt {
     }
 }
 
-# Get path of the actual script
-$ScriptDir = Split-Path $script:MyInvocation.MyCommand.Path
-If (Test-Path  $ScriptDir\c2c_server){ Remove-Item -path $ScriptDir\c2c_server }
-New-Item -Path $ScriptDir -Name "c2c_server" -ItemType "directory"
 
-$extensionArray = "ps1","txt"
-foreach ($extension in $extensionArray) {
-	Get-ChildItem -Path $ScriptDir\link -Recurse -ErrorAction SilentlyContinue -Filter *.$extension |  Where-Object { $_.Extension -eq ".$extension" }|foreach {$path = Resolve-Path $_.FullName ; Invoke-Xencrypt -InFile $path -OutFile "$ScriptDir\c2c_server\$_" -Iterations 3; $path}  
-	}
 
 
 
