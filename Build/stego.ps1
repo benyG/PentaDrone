@@ -406,4 +406,3 @@ function Set-PowerStego {
     }
 
 }
-

