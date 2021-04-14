@@ -7,12 +7,14 @@ LABEL Description="PowerShell Post-exploitation agent based on Mitre Att&ck fram
 
 #RUN apt-get update
 
-COPY src /var/www/html/
+COPY src /var/www/html/src
+COPY exfil.php /var/www/html/
+COPY index.html /var/www/html/
 
-WORKDIR /var/www/html/
+WORKDIR /var/www/html/src
 RUN composer update
 RUN chmod -R 777 bootstrap/cache/ storage/
-RUN chmod +x /var/www/html/start.sh
+RUN chmod +x /var/www/html/src/start.sh
 RUN usermod -d /var/lib/mysql/ mysql
 
 ENV DATE_TIMEZONE UTC
@@ -21,4 +23,4 @@ VOLUME /var/log/httpd
 
 EXPOSE 80
 
-CMD ["/var/www/html/start.sh"]
+CMD ["/var/www/html/src/start.sh"]
