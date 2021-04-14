@@ -790,23 +790,24 @@ If (Test-Path  $ScriptDir\Package\Server){ Remove-Item -path $ScriptDir\Package\
 New-Item -Path $ScriptDir\Package -Name "Server" -ItemType "directory"
 md $ScriptDir\Package\Server\$linkfolder
 md $ScriptDir\Package\Server\exfil
-md $ScriptDir\Package\Server\ui
+md $ScriptDir\Package\Server\src
 
 $ScriptDir = Split-Path $script:MyInvocation.MyCommand.Path
 copy $ScriptDir\www\exfil.php $ScriptDir\Package\Server
 copy $ScriptDir\www\index.html $ScriptDir\Package\Server
 copy $ScriptDir\www\exfil\*.* $ScriptDir\Package\Server\exfil
-copy $ScriptDir\www\ui\* $ScriptDir\Package\Server\ui
+copy $ScriptDir\www\src\* $ScriptDir\Package\Server\src
 # Link Folder
 copy $ScriptDir\www\link\*.html $ScriptDir\Package\Server\$linkfolder
 copy $ScriptDir\www\link\*.php $ScriptDir\Package\Server\$linkfolder
-copy $ScriptDir\www\link\*.png $ScriptDir\Package\C2Server\$linkfolder
+copy $ScriptDir\www\link\*.png $ScriptDir\Package\Server\$linkfolder
 copy $ScriptDir\www\link\*.xml $ScriptDir\Package\Server\$linkfolder
 copy $ScriptDir\www\link\*.psm1 $ScriptDir\Package\Server\$linkfolder
 copy $ScriptDir\www\link\*.psm1 $ScriptDir\Package\Server\$linkfolder
 copy $ScriptDir\www\link\*.css $ScriptDir\Package\Server\$linkfolder
 copy $ScriptDir\www\link\*.ps1 $ScriptDir\Package\Server\$linkfolder
 copy $ScriptDir\www\link\*.vbs $ScriptDir\Package\Server\$linkfolder
+copy $ScriptDir\Package\Client\c2c\* $ScriptDir\Package\Server\$linkfolder
 
 #$extensionArray = "ps1","txt"
 $extensionArray = "txt"

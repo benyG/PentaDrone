@@ -1,0 +1,46 @@
+{
+    "name": "dflydev/dot-access-data",
+    "type": "library",
+    "description": "Given a deep data structure, access data by dot notation.",
+    "homepage": "https://github.com/dflydev/dflydev-dot-access-data",
+    "keywords": ["dot", "access", "data", "notation"],
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Dragonfly Development Inc.",
+            "email": "info@dflydev.com",
+            "homepage": "http://dflydev.com"
+        },
+        {
+            "name": "Beau Simensen",
+            "email": "beau@dflydev.com",
+            "homepage": "http://beausimensen.com"
+        },
+        {
+            "name": "Carlos Frutos",
+            "email": "carlos@kiwing.it",
+            "homepage": "https://github.com/cfrutos"
+        }
+    ],
+    "require": {
+        "php": "^7.0"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^6.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Dflydev\\DotAccessData\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Dflydev\\DotAccessData\\": "tests/"
+        }
+    },
+    "extra": {
+        "branch-alias": {
+            "dev-master": "2.0-dev"
+        }
+    }
+}
