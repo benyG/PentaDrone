@@ -2,7 +2,7 @@ FROM eyesopsec/pentadrone
 
 LABEL Description="PowerShell Post-exploitation agent based on Mitre Att&ck framework" \
 	License="Apache License 2.0" \
-	Usage="docker run -d -p 80:80 --name pentadrone -v data:/var/www/html -v db_data:/var/lib/mysql eyesopsec/pentadrone" \
+	Usage="docker run -d -p 80:80 --name pentadrone -v web_data:/var/www/html -v db_data:/var/lib/mysql eyesopsec/pentadrone" \
 	Version="1.0"
 
 #RUN apt-get update

