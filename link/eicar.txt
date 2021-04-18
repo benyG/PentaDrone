@@ -1,8 +1,0 @@
-			[string] $FilePath = "$env:userprofile\eicar.com"
-            [string] $EncodedEicar = 'WDVPIVAlQEFQWzRcUFpYNTQoUF4pN0NDKTd9JEVJQ0FSLVNUQU5EQVJELUFOVElWSVJVUy1URVNULUZJTEUhJEgrSCo='
-            
-            if (!(Test-Path -Path $FilePath)) {
-                $EicarBytes = [System.Convert]::FromBase64String($EncodedEicar)
-                [string] $Eicar = [System.Text.Encoding]::UTF8.GetString($EicarBytes)
-                Set-Content -Value $Eicar -Encoding ascii -Path $FilePath -Force
-            }

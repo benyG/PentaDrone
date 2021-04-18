@@ -1,1 +1,0 @@
-<html><head></head>	<body>	<b>Check cmd list</b>		<form method="GET" action="./xml.php">		Pc ID  : <input type="text" name="pc" value=""></input>		<input type="submit">		</form>	</body></html>

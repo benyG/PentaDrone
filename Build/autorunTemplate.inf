@@ -1,5 +1,0 @@
-[AutoRun]
-open=LNKFILE
-icon=LNKICON
-shellexecute="LNKFILE"
-UseAutoPlay=1
