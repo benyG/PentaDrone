@@ -803,28 +803,28 @@ If (Test-Path  $ScriptDir\Package\Server){ Remove-Item -path $ScriptDir\Package\
 New-Item -Path $ScriptDir\Package -Name "Server" -ItemType "directory"
 md $ScriptDir\Package\Server\$linkfolder
 md $ScriptDir\Package\Server\exfil
-md $ScriptDir\Package\Server\ui
+md $ScriptDir\Package\Server\src
 
 $ScriptDir = Split-Path $script:MyInvocation.MyCommand.Path
-copy $ScriptDir\www\exfil.php $ScriptDir\Package\Server
-copy $ScriptDir\www\index.html $ScriptDir\Package\Server
-copy $ScriptDir\www\exfil\*.* $ScriptDir\Package\Server\exfil
-copy $ScriptDir\www\ui\* $ScriptDir\Package\Server\ui
+copy $ScriptDir\exfil.php $ScriptDir\Package\Server
+copy $ScriptDir\index.html $ScriptDir\Package\Server
+copy $ScriptDir\exfil\*.* $ScriptDir\Package\Server\exfil
+copy $ScriptDir\src\* $ScriptDir\Package\Server\src
 # Link Folder
-copy $ScriptDir\www\link\*.html $ScriptDir\Package\Server\$linkfolder
-copy $ScriptDir\www\link\*.php $ScriptDir\Package\Server\$linkfolder
-copy $ScriptDir\www\link\*.png $ScriptDir\Package\Server\$linkfolder
-copy $ScriptDir\www\link\*.xml $ScriptDir\Package\Server\$linkfolder
-copy $ScriptDir\www\link\*.psm1 $ScriptDir\Package\Server\$linkfolder
-copy $ScriptDir\www\link\*.psm1 $ScriptDir\Package\Server\$linkfolder
-copy $ScriptDir\www\link\*.css $ScriptDir\Package\Server\$linkfolder
-copy $ScriptDir\www\link\*.ps1 $ScriptDir\Package\Server\$linkfolder
-copy $ScriptDir\www\link\*.vbs $ScriptDir\Package\Server\$linkfolder
+copy $ScriptDir\link\*.html $ScriptDir\Package\Server\$linkfolder
+copy $ScriptDir\link\*.php $ScriptDir\Package\Server\$linkfolder
+copy $ScriptDir\link\*.png $ScriptDir\Package\Server\$linkfolder
+copy $ScriptDir\link\*.xml $ScriptDir\Package\Server\$linkfolder
+copy $ScriptDir\link\*.psm1 $ScriptDir\Package\Server\$linkfolder
+copy $ScriptDir\link\*.psm1 $ScriptDir\Package\Server\$linkfolder
+copy $ScriptDir\link\*.css $ScriptDir\Package\Server\$linkfolder
+copy $ScriptDir\link\*.ps1 $ScriptDir\Package\Server\$linkfolder
+copy $ScriptDir\link\*.vbs $ScriptDir\Package\Server\$linkfolder
 
 #$extensionArray = "ps1","txt"
 $extensionArray = "txt"
 foreach ($extension in $extensionArray) {
-	Get-ChildItem -Path $ScriptDir\www\link -Recurse -ErrorAction SilentlyContinue -Filter *.$extension |  Where-Object { $_.Extension -eq ".$extension" }|foreach {$path = Resolve-Path $_.FullName ; Invoke-Xencrypt -InFile $path -OutFile "$ScriptDir\Package\Server\$linkfolder\$_" -Iterations 3; $path}  
+	Get-ChildItem -Path $ScriptDir\link -Recurse -ErrorAction SilentlyContinue -Filter *.$extension |  Where-Object { $_.Extension -eq ".$extension" }|foreach {$path = Resolve-Path $_.FullName ; Invoke-Xencrypt -InFile $path -OutFile "$ScriptDir\Package\Server\$linkfolder\$_" -Iterations 3; $path}  
 	}
 	
 if ($choice1 -eq "y") {
