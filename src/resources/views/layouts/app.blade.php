@@ -54,7 +54,7 @@
                         <div class="dropdown-menu dropdown-menu-right" aria-labelledby="navbarDropdown">
                             <span {{ Auth::user()->roles == 1 ? : 'hidden' }}>
                                 <a class="dropdown-item" href="{{ route('users') }}">
-                                    Utilisateurs
+                                {{ __('translate.us') }}
                                 </a>
                                 <hr />
                             </span>
@@ -79,18 +79,16 @@
 
 @yield('content')
 
-@section('scripts')
 <script type="text/javascript" src="{{ asset('public/js/jquery.min.js') }}"></script>
 <script type="text/javascript" src="{{ asset('public/js/popper.min.js') }}"></script>
 <script type="text/javascript" src="{{ asset('public/js/bootstrap.min.js') }}"></script>
-<script type="text/javascript" src="{{ asset('public/js/script.js') }}"></script>
 <script type="text/javascript" src="{{ asset('public/js/bs-custom-file-input.min.js') }}"></script>
 <script>
     $(document).ready(function () {
         bsCustomFileInput.init()
     })
 </script>
-@show
+@yield('scripts')
 
 </body>
 </html>
