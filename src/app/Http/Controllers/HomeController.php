@@ -20,7 +20,7 @@ class HomeController extends Controller
     public function index()
     {
         $cmd_auto = Cmd_auto::all();
-        $category_cmd = Category_cmd::all();
+        $category_cmd = Category_cmd::all()->sortBy('id');
         $operationpc = Operationpc::where('status', '!=', 0)->get();
 
         foreach($category_cmd as $cc) {

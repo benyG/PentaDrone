@@ -21,7 +21,7 @@
                     <span class="float-right">
                         <button class="btn btn-secondary btn-sm" data-toggle="modal" data-target="#all_cmd">Auto</button>
                     </span>
-                    Commandes
+                    {{__('translate.cm')}}
                 </div>
                 <div class="card-body p-1 overflow-auto">
 
@@ -54,16 +54,16 @@
                                                             <div class="modal-body">
                                                                 <form>
                                                                     <div class="form-group row">
-                                                                        <label for="staticEmail" class="col-sm-3 col-form-label">Commande</label>
+                                                                        <label for="staticEmail" class="col-sm-3 col-form-label">{{__('translate.cmd')}}</label>
                                                                         <div class="col-sm-9">
                                                                             <input type="text" readonly class="form-control-plaintext text-white" id="staticEmail" value="!{{ $value->name_cmd }}">
                                                                         </div>
                                                                     </div>
                                                                     <div class="form-group row">
-                                                                    <label for="inputPassword" class="col-sm-3 col-form-label">Paramètre</label>
+                                                                    <label for="inputPassword" class="col-sm-3 col-form-label">{{__('translate.pm')}}</label>
                                                                     <div class="col-sm-9">
                                                                         @for($i = 1; $i <= $value->param; $i++)
-                                                                            <input type="password" class="form-control" id="inputPassword" placeholder="Paramètre {{ $i }}" name="param_{{ $i }}" required />
+                                                                            <input type="text" class="form-control" id="inputPassword" placeholder="{{__('translate.pm')}} {{ $i }}" name="param_{{ $i }}" required />
                                                                             <br />
                                                                         @endfor
                                                                     </div>
@@ -74,7 +74,7 @@
                                                                         <div class="form-check">
                                                                             <input class="form-check-input" type="checkbox" value="" id="defaultCheck1">
                                                                             <label class="form-check-label" for="defaultCheck1">
-                                                                                Ajouter comme commande automatique
+                                                                                {{__('translate.aca')}}
                                                                             </label>
                                                                         </div>
                                                                     </div>
@@ -82,8 +82,8 @@
                                                                 </form>
                                                             </div>
                                                             <div class="modal-footer">
-                                                                <button type="button" class="btn btn-outline-secondary btn-sm" data-dismiss="modal">Annuler</button>
-                                                                <button type="button" class="btn btn-primary btn-sm">Envoyer</button>
+                                                                <button type="button" class="btn btn-outline-secondary btn-sm" data-dismiss="modal">{{__('translate.ca')}}</button>
+                                                                <button type="button" class="btn btn-primary btn-sm">{{__('translate.se')}}</button>
                                                             </div>
                                                         </div>
                                                     </div>
@@ -105,22 +105,22 @@
             <div class="card bg-dark" style="height: 340px">
                 <div class="card-header">
                     <span class="float-right" {{ Auth::user()->roles == 1 ? '' : 'hidden' }}>
-                        <button class="btn btn-secondary btn-sm" data-target="#create_operation" data-toggle="modal">Créer</button>
+                        <button class="btn btn-secondary btn-sm" data-target="#create_operation" data-toggle="modal">{{__('translate.cr')}}</button>
                     </span>
-                    <span class="mr-1">Opération :</span>
+                    <span class="mr-1">{{__('translate.op')}} :</span>
                     <select class="custom-select custom-select-sm w-50 mr-2" id="selectOperation">
-                        <option selected disabled>Sélectionner une opération</option>
+                        <option selected disabled>{{__('translate.sop')}}</option>
                         @foreach($operationpc as $pc)
                             <option value="{{ $pc->id }}">{{ $pc->ops_name }}</option>
                         @endforeach
                     </select>
-                    <span class="mr-1">Online :</span>
+                    <span class="mr-1">{{__('translate.on')}} :</span>
                     <input type="number" placeholder="Minute" class="form-control form-control-sm d-inline" id="selectTime" value="30" style="width: 100px" disabled />
                 </div>
                 <div class="card-body">
 
                     <div class="text-center h2 text-muted" id="canvas_pc_none">
-                        Sélectionner une opération
+                    {{__('translate.sop')}}
                     </div>
 
                     <p id="canvas_opc" class="text-center" style="display: none">
@@ -135,9 +135,9 @@
                             </div>
                         </span>
                         <h6>
-                            <b>Nom :</b> <span id="name_opc"></span>
+                            <b>{{__('translate.nm')}} :</b> <span id="name_opc"></span>
                             <br />
-                            <b>Commentaire :</b> <span id="desc_opc"></span>
+                            <b>{{__('translate.cmt')}} :</b> <span id="desc_opc"></span>
                         </h6>
 
                         <hr />
@@ -153,9 +153,9 @@
                                         </div>
                                     </th>
                                     <th scope="col"></th>
-                                    <th scope="col">Nom</th>
+                                    <th scope="col">{{__('translate.nm')}}</th>
                                     <th scope="col">IP</th>
-                                    <th scope="col">Domain</th>
+                                    <th scope="col">{{__('translate.do')}}</th>
                                     <th scope="col">Description</th>
                                     <th scope="col"></th>
                                 </tr>
@@ -165,7 +165,7 @@
                             </table>
                         </div>
 
-                        <h5 class="text-center text-muted" id="no_pc"> Aucun PC pour cette opération </h5>
+                        <h5 class="text-center text-muted" id="no_pc"> {{__('translate.nop')}} </h5>
 
                     </div>
                 </div>
@@ -180,14 +180,14 @@
             <div class="card bg-dark" style="height: 260px">
                 <div class="card-header">
                     <span class="float-right" {{ Auth::user()->roles == 1 ? '' : 'hidden' }}>
-                        <button class="btn btn-secondary btn-sm" data-toggle="modal" data-target="#create_agent">Ajouter</button>
+                        <button class="btn btn-secondary btn-sm" data-toggle="modal" data-target="#create_agent">{{__('translate.add')}}</button>
                     </span>
-                    Liste des agents
+                    {{__('translate.lag')}}
                 </div>
                 <div class="card-body overflow-auto">
 
                     <div class="text-center text-small text-muted" id="canvas_ag_none">
-                        Sélectionner une opération
+                    {{__('translate.sop')}}
                     </div>
 
                     <p id="canvas_ag" class="text-center" style="display: none">
@@ -207,7 +207,7 @@
                                         </div>
                                     </th>
                                     <th scope="col"></th>
-                                    <th scope="col">Nom</th>
+                                    <th scope="col">{{__('translate.nm')}}</th>
                                     <th scope="col"></th>
                                 </tr>
                                 </thead>
@@ -216,7 +216,7 @@
                             </table>
                         </div>
 
-                        <div class="text-center text-small text-muted" id="no_ag"> Aucun Agent pour cette opération </div>
+                        <div class="text-center text-small text-muted" id="no_ag"> {{__('translate.nag')}} </div>
                     </div>
 
                 </div>
@@ -226,21 +226,21 @@
             <div class="card bg-dark" style="height: 260px">
                 <div class="card-header">
                     <span class="float-right" {{ Auth::user()->roles == 1 ? '' : 'hidden' }}>
-                        <button class="btn btn-danger btn-sm" id="del_all_res" data-toggle="modal" data-target="#delete_result" disabled>Supprimer tout</button>
+                        <button class="btn btn-danger btn-sm" id="del_all_res" data-toggle="modal" data-target="#delete_result" disabled>{{__('translate.dela')}}</button>
                     </span>
-                    Résultats des commandes <span id="on_res"></span>
+                    {{__('translate.rcm')}} <span id="on_res"></span>
                 </div>
                 <div class="card-body overflow-auto">
 
                     <div class="text-center h2 text-muted" id="res_none_pc">
-                        Sélectionner un PC
+                    {{__('translate.spc')}}
                     </div>
 
                     <p id="canvas_res" class="text-center" style="display: none">
                         <img src="{{ asset('public/files/v24/loading.gif') }}" style="width: 50px" alt="loading" />
                     </p>
 
-                    <h5 class="text-center text-muted" id="no_res_pc" style="display: none">Aucun resultat pour ce PC</h5>
+                    <h5 class="text-center text-muted" id="no_res_pc" style="display: none">{{__('translate.nrp')}}</h5>
 
                     <div id="res_pc"></div>
 
@@ -256,7 +256,7 @@
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content bg-dark">
                 <div class="modal-header">
-                    <h6 class="modal-title" id="exampleModalLabel">Ajouter un agent</h6>
+                    <h6 class="modal-title" id="exampleModalLabel">{{__('translate.addag')}}</h6>
                     <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
                         <span aria-hidden="true">&times;</span>
                     </button>
@@ -264,25 +264,25 @@
                 <div class="modal-body">
                     <form>
                         <div class="form-group row">
-                          <label for="staticEmail" class="col-sm-3 col-form-label">Nom</label>
+                          <label for="staticEmail" class="col-sm-3 col-form-label">{{__('translate.nm')}}</label>
                           <div class="col-sm-9">
-                            <input type="text" class="form-control" id="staticEmail" placeholder="Nom de l'agent">
+                            <input type="text" class="form-control" id="staticEmail" placeholder="{{__('translate.nmag')}}">
                           </div>
                         </div>
                         <div class="form-group row">
-                          <label for="inputPassword" class="col-sm-3 col-form-label">Fichier</label>
+                          <label for="inputPassword" class="col-sm-3 col-form-label">{{__('translate.fi')}}</label>
                           <div class="col-sm-9">
                             <div class="custom-file">
                                 <input type="file" class="custom-file-input" id="customFileLangHTML">
-                                <label class="custom-file-label" for="customFileLangHTML" data-browse="Parcourir">Fichier</label>
+                                <label class="custom-file-label" for="customFileLangHTML" data-browse="{{__('translate.br')}}">{{__('translate.fi')}}</label>
                               </div>
                           </div>
                         </div>
                     </form>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-outline-secondary btn-sm" data-dismiss="modal">Annuler</button>
-                    <button type="submit" class="btn btn-primary btn-sm">Créer</button>
+                    <button type="button" class="btn btn-outline-secondary btn-sm" data-dismiss="modal">{{__('translate.ca')}}</button>
+                    <button type="submit" class="btn btn-primary btn-sm">{{__('translate.cr')}}</button>
                 </div>
             </div>
         </div>
@@ -292,7 +292,7 @@
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content bg-dark">
                 <div class="modal-header">
-                    <h6 class="modal-title" id="exampleModalLabel">Commandes automatiques</h6>
+                    <h6 class="modal-title" id="exampleModalLabel">{{__('translate.auc')}}</h6>
                     <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
                         <span aria-hidden="true">&times;</span>
                     </button>
@@ -302,8 +302,8 @@
                     <table class="table table-hover table-dark table-sm">
                         <thead class="thead-light">
                           <tr>
-                            <th>Commande</th>
-                            <th>Ordre</th>
+                            <th>{{__('translate.cmd')}}</th>
+                            <th>{{__('translate.or')}}</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -318,7 +318,7 @@
                     </table>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">Fermer</button>
+                    <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">{{__('translate.cl')}}</button>
                 </div>
             </div>
         </div>
@@ -329,7 +329,7 @@
             <div class="modal-content bg-dark">
                 <form id="create_opc" method="post" action="{{ route('create.operation') }}">
                     <div class="modal-header">
-                        <h6 class="modal-title" id="exampleModalLabel">Créer une opération</h6>
+                        <h6 class="modal-title" id="exampleModalLabel">{{__('translate.cop')}}</h6>
                         <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
                             <span aria-hidden="true">&times;</span>
                         </button>
@@ -337,23 +337,23 @@
                     <div class="modal-body">
                             @csrf
                             <div class="form-group row">
-                            <label for="staticEmail" class="col-sm-3 col-form-label">Nom</label>
+                            <label for="staticEmail" class="col-sm-3 col-form-label">{{__('translate.nm')}}</label>
                             <div class="col-sm-9">
-                                <input type="text" name="ops_name" class="form-control" placeholder="Nom de l'opération" required />
+                                <input type="text" name="ops_name" class="form-control" placeholder="{{__('translate.nmop')}}" required />
                                 <small></small>
                             </div>
                             </div>
                             <div class="form-group row">
-                            <label for="inputPassword" class="col-sm-3 col-form-label">Commentaire</label>
+                            <label for="inputPassword" class="col-sm-3 col-form-label">{{__('translate.cmt')}}</label>
                             <div class="col-sm-9">
-                                <textarea name="description" rows="5" placeholder="Le commentaire" class="form-control" required></textarea>
+                                <textarea name="description" rows="5" placeholder="{{__('translate.cmt')}}" class="form-control" required></textarea>
                                 <small></small>
                             </div>
                             </div>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-outline-secondary btn-sm" data-dismiss="modal">Annuler</button>
-                        <button type="submit" class="btn btn-primary btn-sm" id="btn_submit">Créer</button>
+                        <button type="button" class="btn btn-outline-secondary btn-sm" data-dismiss="modal">{{__('translate.ca')}}</button>
+                        <button type="submit" class="btn btn-primary btn-sm" id="btn_submit">{{__('translate.cr')}}</button>
                     </div>
                 </form>
             </div>
@@ -364,17 +364,17 @@
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content bg-dark">
                 <div class="modal-header">
-                    <h6 class="modal-title" id="exampleModalLabel">Supprimer tout les resultats</h6>
+                    <h6 class="modal-title" id="exampleModalLabel">{{__('translate.drs')}}</h6>
                     <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
                         <span aria-hidden="true">&times;</span>
                     </button>
                 </div>
                 <div class="modal-body">
-                    Vous souhaitez supprimer tout les resultats?
+                {{__('translate.wrn.drs')}}
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-outline-secondary btn-sm" data-dismiss="modal">Annuler</button>
-                    <button type="submit" class="btn btn-danger btn-sm">Supprimer</button>
+                    <button type="button" class="btn btn-outline-secondary btn-sm" data-dismiss="modal">{{__('translate.ca')}}</button>
+                    <button type="submit" class="btn btn-danger btn-sm">{{__('translate.del')}}</button>
                 </div>
             </div>
         </div>
@@ -385,7 +385,7 @@
             <div class="modal-content bg-dark">
                 <form id="edit_ops" method="post" action="{{ route('edit.operation') }}">
                     <div class="modal-header">
-                        <h6 class="modal-title" id="exampleModalLabel">Modifier une opération</h6>
+                        <h6 class="modal-title" id="exampleModalLabel">{{__('translate.eop')}}</h6>
                         <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
                             <span aria-hidden="true">&times;</span>
                         </button>
@@ -393,24 +393,24 @@
                     <div class="modal-body">
                             @csrf
                             <div class="form-group row">
-                            <label for="staticEmail" class="col-sm-3 col-form-label">Nom</label>
+                            <label for="staticEmail" class="col-sm-3 col-form-label">{{__('translate.nm')}}</label>
                             <div class="col-sm-9">
                                 <input type="hidden" name="id" id="ops_id" value="" />
-                                <input type="text" name="ops_name" id="name_ops" class="form-control" placeholder="Nom de l'opération" required />
+                                <input type="text" name="ops_name" id="name_ops" class="form-control" placeholder="{{__('translate.nmop')}}" required />
                                 <small></small>
                             </div>
                             </div>
                             <div class="form-group row">
-                                <label for="inputPassword" class="col-sm-3 col-form-label">Commentaire</label>
+                                <label for="inputPassword" class="col-sm-3 col-form-label">{{__('translate.cmt')}}</label>
                                 <div class="col-sm-9">
-                                    <textarea name="description" id="desc_opc" rows="5" placeholder="Le commentaire" class="form-control" required></textarea>
+                                    <textarea name="description" id="desc_opc" rows="5" placeholder="{{__('translate.cmt')}}" class="form-control" required></textarea>
                                     <small></small>
                                 </div>
                             </div>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-outline-secondary btn-sm" data-dismiss="modal">Annuler</button>
-                        <button type="submit" class="btn btn-primary btn-sm" id="btn_submit">Modifier</button>
+                        <button type="button" class="btn btn-outline-secondary btn-sm" data-dismiss="modal">{{__('translate.ca')}}</button>
+                        <button type="submit" class="btn btn-primary btn-sm" id="btn_submit">{{__('translate.edit')}}</button>
                     </div>
                 </form>
             </div>
@@ -424,18 +424,18 @@
                     @method('delete')
                     @csrf
                     <div class="modal-header">
-                        <h6 class="modal-title" id="exampleModalLabel">Supprimer une opération</h6>
+                        <h6 class="modal-title" id="exampleModalLabel">{{__('translate.dop')}}</h6>
                         <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
                             <span aria-hidden="true">&times;</span>
                         </button>
                     </div>
                     <div class="modal-body">
                         <input type="hidden" name="id" value="" id="ops_id" />
-                        Vous souhaitez supprimer cette opération ?
+                        {{__('translate.wrn.dop')}}
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-outline-secondary btn-sm" data-dismiss="modal">Annuler</button>
-                        <button type="submit" class="btn btn-danger btn-sm" id="btn_submit">Supprimer</button>
+                        <button type="button" class="btn btn-outline-secondary btn-sm" data-dismiss="modal">{{__('translate.ca')}}</button>
+                        <button type="submit" class="btn btn-danger btn-sm" id="btn_submit">{{__('translate.del')}}</button>
                     </div>
                 </form>
             </div>
@@ -449,6 +449,7 @@
 
 @section('scripts')
     @parent
+<script type="text/javascript" src="{{ asset('public/js/script.js') }}"></script>
 
     <script>
         $(document).ready(function(){
@@ -719,11 +720,11 @@
                                 body += '</button>';
                                 body += '</span>';
                                 body += '<small class="alert-heading">';
-                                body += '<b>COMMANDE :</b> ' + data.cmd;
+                                body += '<b>{{strtoupper(__('translate.cmd'))}} :</b> ' + data.cmd;
                                 body += '</small>';
                                 body += '<br />';
                                 body += '<small class="alert-heading">';
-                                body += '<b>RESULTAT :</b> ' + data.result;
+                                body += '<b>{{strtoupper(__('translate.res'))}} :</b> ' + data.result;
                                 body += '</small>';
                                 body += '</div>';
                             $("#res_pc").prepend(body);

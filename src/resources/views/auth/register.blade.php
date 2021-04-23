@@ -72,7 +72,7 @@
                         <hr />
                         <div class="text-center">
                             @if (Route::has('register'))
-                                Vous avez déjà un compte ?
+                            {{ __('include.header.auth.acc') }}
                                 <a class="text-decoration-none" href="{{ route('login') }}">{{ __('include.header.auth.login') }}</a>
                             @endif
                         </div>
