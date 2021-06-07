@@ -74,7 +74,41 @@ class HomeController extends Controller
 
         return response()->json();
     }
+    public function createCmd(Request $request) {
+        $validation = $request->validate([
+            'pc' => 'required_without:chca',
+            'cmm' => 'required',
+            'cord'=> 'required_if:chca,on|integer',
+            'cop'=> 'required_if:chca,on'
+        ]);
+        if ($validation) {
+            $arr=explode(",",$request->get('pc'));
+            $cm=$request->get('cmm');
+            $arr1=array_filter($request->input(),function ($key) {
+                return strstr($key,"param_") !=false;
+            }, ARRAY_FILTER_USE_KEY);
+            if(count($arr1)>0){$cm.="|".implode('|',$arr1);}
 
+            if(array_key_exists("chca",$request->input())){
+                $create = Cmd_auto::create([
+                    'cmd_auto' => $cm,
+                    'operationpc_cmd_fk' => $request->get('cop'),
+                    'ordre' => $request->get('cord'),
+                ]);    
+            }else{ 
+                foreach($arr as $pc){
+                $create = Command::create([
+                    'pc' => $pc,
+                    'cmd' => $cm,
+                    'ok' => 0,
+                ]);
+                }
+            }
+            return response()->json();
+        }
+
+        return response()->json();
+    }
     public function getOperation($id, int $min) {
         $operation = Operationpc::find($id);
         $computers = Computer::where('ops_linked', $operation->ops_name)->get();

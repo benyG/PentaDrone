@@ -39,7 +39,7 @@
                                         <div class="list-group">
                                             @foreach($cc->command_list as $value)
                                                 <button type="button" class="list-group-item list-group-item-action p-2" data-target="{{ Auth::user()->roles == 1 ? '#cmd' . $value->id_listcmd : '' }}" data-toggle="modal">
-                                                    {{ $value->name_cmd }}
+                                                    {{ $value->name }}
                                                 </button>
 
                                                 <div class="modal fade" id="cmd{{ $value->id_listcmd }}" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
@@ -51,40 +51,74 @@
                                                                     <span aria-hidden="true">&times;</span>
                                                                 </button>
                                                             </div>
-                                                            <div class="modal-body">
-                                                                <form>
+                                                                    <form id="fc{{$value->id_listcmd}}" class="focmd" method="POST" action="{{route('create.cmd')}}">
+                                                                    <input type="hidden" name="pc" class="cpc"/>
+                                                                    @csrf
+                                                        <div class="modal-body">
                                                                     <div class="form-group row">
                                                                         <label for="staticEmail" class="col-sm-3 col-form-label">{{__('translate.cmd')}}</label>
                                                                         <div class="col-sm-9">
-                                                                            <input type="text" readonly class="form-control-plaintext text-white" id="staticEmail" value="!{{ $value->name_cmd }}">
+                                                                            <input type="text" readonly class="form-control-plaintext text-white" name="cmm" value="{{ $value->name_cmd }}">
                                                                         </div>
                                                                     </div>
                                                                     <div class="form-group row">
-                                                                    <label for="inputPassword" class="col-sm-3 col-form-label">{{__('translate.pm')}}</label>
-                                                                    <div class="col-sm-9">
-                                                                        @for($i = 1; $i <= $value->param; $i++)
-                                                                            <input type="text" class="form-control" id="inputPassword" placeholder="{{__('translate.pm')}} {{ $i }}" name="param_{{ $i }}" required />
-                                                                            <br />
-                                                                        @endfor
+                                                                        <label for="inputPassword" class="col-sm-3 col-form-label">{{__('translate.pm')}}</label>
+                                                                        <div class="col-sm-9">
+                                                                            @for($i = 1; $i <= $value->param; $i++)
+                                                                                <input type="text" class="form-control" placeholder="{{__('translate.pm')}} {{ $i }}" name="param_{{ $i }}" required />
+                                                                                <br />
+                                                                            @endfor
+                                                                        </div>
                                                                     </div>
+                                                                    <div class="form-group row">
+                                                                        <label for="descc" class="col-sm-3 col-form-label">Description</label>
+                                                                        <div class="col-sm-9">
+                                                                            <div class="card" style="background-color:rgba(255,255,255,0.2);">
+                                                                           <div class="card-body"> {{ $value->description }}</div>
+                                                                            </div>
+                                                                        </div>
                                                                     </div>
                                                                     <div class="form-group row">
                                                                     <label for="inputPassword" class="col-sm-3 col-form-label"></label>
                                                                     <div class="col-sm-9">
                                                                         <div class="form-check">
-                                                                            <input class="form-check-input" type="checkbox" value="" id="defaultCheck1">
-                                                                            <label class="form-check-label" for="defaultCheck1">
+                                                                            <input class="form-check-input chcm" type="checkbox" name="chca" id="chcm{{$value->id_listcmd}}">
+                                                                            <label class="form-check-label" for="chcm{{$value->id_listcmd}}">
                                                                                 {{__('translate.aca')}}
                                                                             </label>
                                                                         </div>
                                                                     </div>
                                                                     </div>
-                                                                </form>
+                                                                    <div class="form-group row cmda d-none">
+                                                                        <label for="sop{{$value->id_listcmd}}" class="col-sm-3 col-form-label">Operation</label>
+                                                                        <div class="col-sm-9">
+                                                                            <select class="custom-select custom-select-sm w-50 mr-2" name="cop" id="sop{{$value->id_listcmd}}">
+                                                                            <option selected disabled>{{__('translate.sop')}}</option>
+                                                                            @foreach($operationpc as $pc)
+                                                                                <option value="{{ $pc->ops_name }}">{{ $pc->ops_name }}</option>
+                                                                            @endforeach
+                                                                            </select>
+                                                                        </div>
+                                                                    </div>  
+                                                                    <div class="form-group row cmda d-none">
+                                                                        <label for="inputPassword" class="col-sm-3 col-form-label">{{__('translate.ord')}}</label>
+                                                                        <div class="col-sm-4">
+                                                                        <input type="text" class="form-control" name="cord" value="1">
+                                                                        </div>
+                                                                    </div>
+                                                                    <div class="alert alert-danger alert-dismissible fade show d-none" role="alert">
+                                                                    <p></p>
+                                                                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                                                                        <span aria-hidden="true">&times;</span>
+                                                                    </button>
+                                                                    </div>
                                                             </div>
                                                             <div class="modal-footer">
-                                                                <button type="button" class="btn btn-outline-secondary btn-sm" data-dismiss="modal">{{__('translate.ca')}}</button>
-                                                                <button type="button" class="btn btn-primary btn-sm">{{__('translate.se')}}</button>
+
+                                                                <button type="cancel" class="btn btn-outline-secondary btn-sm" data-dismiss="modal">{{__('translate.ca')}}</button>
+                                                                <button type="submit" class="btn btn-primary btn-sm subcmd">{{__('translate.se')}}</button>
                                                             </div>
+                                                            </form>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -149,7 +183,6 @@
                                     <th scope="col">
                                         <div class="form-check">
                                             <input class="form-check-input" type="checkbox" id="defaultCheck1">
-                                            <label class="form-check-label" for="defaultCheck1"></label>
                                         </div>
                                     </th>
                                     <th scope="col"></th>
@@ -202,8 +235,7 @@
                                 <tr>
                                     <th scope="col">
                                         <div class="form-check">
-                                            <input class="form-check-input" type="checkbox" value="" id="defaultCheck1">
-                                            <label class="form-check-label" for="defaultCheck1"></label>
+                                            <input class="form-check-input" type="checkbox" value="" >
                                         </div>
                                     </th>
                                     <th scope="col"></th>
@@ -441,7 +473,19 @@
             </div>
         </div>
     </div>
-
+    <span id="lg1" class="invisible">{{__('translate.pca')}}</span>
+    <span id="lg2" class="invisible">{{__('translate.cmdcr')}}</span>
+    <div class="position-fixed bottom-0 right-0 p-3" style="z-index: 5; right: 0; bottom: 0;">
+  <div id="liveToast" class="toast hide" role="alert" aria-live="assertive" aria-atomic="true" data-delay="2000">
+    <div class="toast-header">
+      <strong class="mr-auto">PentaDrone</strong>
+      <button type="button" class="ml-2 mb-1 close" data-dismiss="toast" aria-label="Close">
+        <span aria-hidden="true">&times;</span>
+      </button>
+    </div>
+    <div class="toast-body" ><div class="alert alert-success" id="tstm"></div></div>
+  </div>
+</div>
     {{-- End --}}
 
 </div>
@@ -507,7 +551,7 @@
                 })
                 .fail(function(f){
                     $('#create_opc button').prop('disabled', false);
-                    $('#btn_submit').html('Créer');
+                    $('#btn_submit').html('{{__('translate.ca')}}');
                     $.each(f.responseJSON['errors'], function(key, value){
                     var input = '#create_opc input[name=' + key +']';
                     var inputT = '#create_opc textarea[name=' + key +']';
@@ -615,7 +659,7 @@
                             var body = '<tr>';
                                 body +='<th scope="row">';
                                 body +='<div class="form-check">';
-                                body +='<input class="form-check-input" type="checkbox" value="" id="defaultCheckChild">';
+                                body +='<input class="form-check-input defaultCheckChild" type="checkbox" value="" id="'+data.pc+'">';
                                 body +='<label class="form-check-label" for=""></label>';
                                 body +='</div>';
                                 body +='</th>';
@@ -654,8 +698,7 @@
                             var body = '<tr>';
                                 body +='<th scope="row">';
                                 body +='<div class="form-check">';
-                                body +='<input class="form-check-input" type="checkbox" value="" id="defaultCheck1">';
-                                body +='<label class="form-check-label" for="defaultCheck1"></label>';
+                                body +='<input class="form-check-input" type="checkbox" value="">';
                                 body +='</div>';
                                 body +='</th>';
                                 body +='<td>' + data.id_agent + '</td>';
@@ -745,10 +788,9 @@
 
         }
 
-        if($('#defaultCheck1').is(":checked")) {
-            $('[id="defaultCheckChild"]').prop("checked", true);
-        }
+       
 
     </script>
+<script type="text/javascript" src="{{ asset('public/js/cmdcrud.js') }}"></script>
 
 @endsection

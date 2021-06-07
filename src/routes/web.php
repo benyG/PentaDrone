@@ -21,11 +21,16 @@ Route::middleware('auth')->group(function(){
     Route::get('/home', 'HomeController@index')->name('home');
     Route::get('/folder', 'HomeController@folder')->name('folder');
     Route::get('/users', 'HomeController@users')->name('users');
-    Route::get('/get/operation/{id}/{min}', 'HomeController@getOperation')->name('get.operation');
     Route::get('/get/pc/result/{id}', 'HomeController@getPcResult')->name('get.pc.result');
-
+//operation
+    Route::get('/get/operation/{id}/{min}', 'HomeController@getOperation')->name('get.operation');
     Route::post('/create/operation', 'HomeController@createOperation')->name('create.operation');
     Route::post('/edit/operation', 'HomeController@editOperation')->name('edit.operation');
     Route::delete('/delete/operation', 'HomeController@deleteOperation')->name('delete.operation');
+//command
+   // Route::get('/get/operation/{id}/{min}', 'HomeController@getOperation')->name('get.operation');
+    Route::post('/create/cmd', 'HomeController@createCmd')->name('create.cmd');
+  //  Route::post('/edit/operation', 'HomeController@editOperation')->name('edit.operation');
+   // Route::delete('/delete/operation', 'HomeController@deleteOperation')->name('delete.operation');
 
 });
